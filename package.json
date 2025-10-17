@@ -1,0 +1,33 @@
+{
+  "name": "concept-transpiler",
+  "version": "1.0.0",
+  "description": "A transpiler for converting Concept 4GL language to JavaScript",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node cli.js",
+    "test": "node test.js",
+    "build": "npm run test",
+    "dev": "node --inspect cli.js"
+  },
+  "keywords": [
+    "concept",
+    "4gl",
+    "transpiler",
+    "javascript",
+    "visma",
+    "enterprise"
+  ],
+  "author": "Concept Transpiler Team",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^9.0.0",
+    "chalk": "^5.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

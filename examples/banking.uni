@@ -1,0 +1,30 @@
+$constant BANK_NAME "Visma Bank"
+$constant INTEREST_RATE 0.045
+$constant MIN_BALANCE 1000
+
+online="BankAccount"
+
+field="accountId" static() storage(i4) initial-value(0)
+field="accountHolder" static() storage(a(100)) initial-value("")
+field="balance" static() storage(i4) initial-value(0)
+field="interestEarned" static() storage(i4) initial-value(0)
+field="newBalance" static() storage(i4) initial-value(0)
+field="accountType" static() storage(a(20)) initial-value("savings")
+
+on @START
+  assign("accountId" = 55443322)
+  assign("accountHolder" = "Ola Nordmann")
+  assign("balance" = 50000)
+  call('CalculateInterest')
+  call('UpdateBalance')
+endon
+
+xtra="CalculateInterest"
+on @xtra
+  assign("interestEarned" = "balance" * 0.045)
+endon
+
+xtra="UpdateBalance"
+on @xtra
+  assign("newBalance" = "balance" + "interestEarned")
+endon

@@ -1,0 +1,46 @@
+$constant MAX_EMPLOYEES 5
+$constant BASE_SALARY 50000
+$constant BONUS_PER_YEAR 2000
+
+online="SalaryCalculator"
+
+field="companyId" static() storage(i4) initial-value(0)
+field="totalEmployees" static() storage(i4) initial-value(0)
+field="currentEmployee" static() storage(i4) initial-value(0)
+field="yearsOfService" static() storage(i4) initial-value(0)
+field="totalSalaryBudget" static() storage(i4) initial-value(0)
+field="averageSalary" static() storage(i4) initial-value(0)
+field="processingComplete" static() storage(a(5)) initial-value("false")
+
+on @START
+  assign("companyId" = 9876)
+  assign("totalEmployees" = 5)
+  assign("currentEmployee" = 1)
+  call('CalculateBudget')
+  call('ProcessEmployees')
+endon
+
+xtra="CalculateBudget"
+on @xtra
+  assign("totalSalaryBudget" = 0)
+  loop ("currentEmployee" = 1 to "totalEmployees")
+    assign("yearsOfService" = "currentEmployee" + 2)
+    assign("totalSalaryBudget" = "totalSalaryBudget" + (50000 + ("yearsOfService" * 2000)))
+  endloop
+  assign("averageSalary" = "totalSalaryBudget" / "totalEmployees")
+endon
+
+xtra="ProcessEmployees"
+on @xtra
+  assign("currentEmployee" = 1)
+  loop ("currentEmployee" <= "totalEmployees")
+    assign("yearsOfService" = "currentEmployee" + 1)
+    if ("yearsOfService" >= 3)
+      assign("currentEmployee" = "currentEmployee" + 1)
+    endif
+    if ("yearsOfService" < 3)
+      assign("currentEmployee" = "currentEmployee" + 1)
+    endif
+  endloop
+  assign("processingComplete" = "true")
+endon

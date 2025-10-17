@@ -1,0 +1,38 @@
+$constant COMPANY_NAME "Visma AS"
+$constant MIN_SALARY 400000
+$constant BONUS_RATE 0.10
+
+online="EmployeeManager"
+
+field="empId" static() storage(i4) initial-value(0)
+field="firstName" static() storage(a(50)) initial-value("")
+field="lastName" static() storage(a(50)) initial-value("")
+field="baseSalary" static() storage(i4) initial-value(0)
+field="bonus" static() storage(i4) initial-value(0)
+field="totalSalary" static() storage(i4) initial-value(0)
+field="eligible" static() storage(a(5)) initial-value("false")
+
+on @START
+  assign("empId" = 1001)
+  assign("firstName" = "Erik")
+  assign("lastName" = "Hansen")
+  assign("baseSalary" = 650000)
+  call('CheckEligibility')
+  call('CalculateBonus')
+  call('CalculateTotal')
+endon
+
+xtra="CheckEligibility"
+on @xtra
+  assign("eligible" = "true")
+endon
+
+xtra="CalculateBonus"
+on @xtra
+  assign("bonus" = "baseSalary" * 0.10)
+endon
+
+xtra="CalculateTotal"
+on @xtra
+  assign("totalSalary" = "baseSalary" + "bonus")
+endon

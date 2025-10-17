@@ -1,0 +1,21 @@
+$constant PI 3.14159
+$constant TAX_RATE 0.15
+
+online="Calculator"
+
+field="number1" static() storage(i4) initial-value(0)
+field="number2" static() storage(i4) initial-value(0)
+field="result" static() storage(i4) initial-value(0)
+field="operation" static() storage(a(10)) initial-value("")
+
+on @START
+  assign("number1" = 100)
+  assign("number2" = 25)
+  assign("operation" = "add")
+  call('Calculate')
+endon
+
+xtra="Calculate"
+on @xtra
+  assign("result" = "number1" + "number2")
+endon

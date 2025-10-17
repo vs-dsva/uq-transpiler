@@ -1,0 +1,39 @@
+$constant VAT_RATE 0.25
+$constant CURRENCY "NOK"
+$constant PAYMENT_TERMS 30
+
+online="InvoiceProcessor"
+
+field="invoiceId" static() storage(i4) initial-value(0)
+field="customerId" static() storage(i4) initial-value(0)
+field="netAmount" static() storage(i4) initial-value(0)
+field="vatAmount" static() storage(i4) initial-value(0)
+field="totalAmount" static() storage(i4) initial-value(0)
+field="status" static() storage(a(20)) initial-value("draft")
+field="dueDate" static() storage(a(10)) initial-value("")
+
+on @START
+  assign("invoiceId" = 12345)
+  assign("customerId" = 9876)
+  assign("netAmount" = 10000)
+  assign("status" = "processing")
+  call('CalculateVAT')
+  call('CalculateTotal')
+  call('FinalizeInvoice')
+endon
+
+xtra="CalculateVAT"
+on @xtra
+  assign("vatAmount" = "netAmount" * 0.25)
+endon
+
+xtra="CalculateTotal"
+on @xtra
+  assign("totalAmount" = "netAmount" + "vatAmount")
+endon
+
+xtra="FinalizeInvoice"
+on @xtra
+  assign("status" = "finalized")
+  assign("dueDate" = "2025-11-17")
+endon

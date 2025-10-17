@@ -1,0 +1,40 @@
+$constant STORE_NAME "Visma Store"
+$constant SHIPPING_COST 150
+$constant DISCOUNT_RATE 0.05
+
+online="OrderProcessor"
+
+field="orderId" static() storage(i4) initial-value(0)
+field="customerId" static() storage(i4) initial-value(0)
+field="itemPrice" static() storage(i4) initial-value(0)
+field="quantity" static() storage(i4) initial-value(0)
+field="subtotal" static() storage(i4) initial-value(0)
+field="discount" static() storage(i4) initial-value(0)
+field="shipping" static() storage(i4) initial-value(0)
+field="total" static() storage(i4) initial-value(0)
+
+on @START
+  assign("orderId" = 78901)
+  assign("customerId" = 4455)
+  assign("itemPrice" = 299)
+  assign("quantity" = 3)
+  assign("shipping" = 150)
+  call('CalculateSubtotal')
+  call('ApplyDiscount')
+  call('CalculateTotal')
+endon
+
+xtra="CalculateSubtotal"
+on @xtra
+  assign("subtotal" = "itemPrice" * "quantity")
+endon
+
+xtra="ApplyDiscount"
+on @xtra
+  assign("discount" = "subtotal" * 0.05)
+endon
+
+xtra="CalculateTotal"
+on @xtra
+  assign("total" = ("subtotal" - "discount") + "shipping")
+endon

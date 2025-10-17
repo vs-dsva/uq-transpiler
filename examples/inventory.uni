@@ -1,0 +1,38 @@
+$constant WAREHOUSE_NAME "Oslo Warehouse"
+$constant REORDER_LEVEL 10
+$constant MARKUP_RATE 0.30
+
+online="InventoryManager"
+
+field="productId" static() storage(i4) initial-value(0)
+field="productName" static() storage(a(50)) initial-value("")
+field="quantity" static() storage(i4) initial-value(0)
+field="unitCost" static() storage(i4) initial-value(0)
+field="totalValue" static() storage(i4) initial-value(0)
+field="sellingPrice" static() storage(i4) initial-value(0)
+field="needsReorder" static() storage(a(5)) initial-value("false")
+
+on @START
+  assign("productId" = 12001)
+  assign("productName" = "Laptop Computer")
+  assign("quantity" = 5)
+  assign("unitCost" = 8000)
+  call('CalculateValue')
+  call('CalculatePrice')
+  call('CheckReorder')
+endon
+
+xtra="CalculateValue"
+on @xtra
+  assign("totalValue" = "quantity" * "unitCost")
+endon
+
+xtra="CalculatePrice"
+on @xtra
+  assign("sellingPrice" = "unitCost" + ("unitCost" * 0.30))
+endon
+
+xtra="CheckReorder"
+on @xtra
+  assign("needsReorder" = "true")
+endon

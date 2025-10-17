@@ -1,0 +1,54 @@
+$constant DISCOUNT_THRESHOLD 1000
+$constant VIP_DISCOUNT 0.15
+$constant REGULAR_DISCOUNT 0.05
+$constant MAX_ITEMS 10
+
+online="OrderValidator"
+
+field="customerId" static() storage(i4) initial-value(0)
+field="customerType" static() storage(a(10)) initial-value("regular")
+field="orderTotal" static() storage(i4) initial-value(0)
+field="itemCount" static() storage(i4) initial-value(0)
+field="discountRate" static() storage(i4) initial-value(0)
+field="finalTotal" static() storage(i4) initial-value(0)
+field="validOrder" static() storage(a(5)) initial-value("false")
+field="processingNote" static() storage(a(100)) initial-value("")
+
+on @START
+  assign("customerId" = 12345)
+  assign("customerType" = "vip")
+  assign("orderTotal" = 1500)
+  assign("itemCount" = 3)
+  call('ValidateOrder')
+  call('CalculateDiscount')
+  call('ProcessOrder')
+endon
+
+xtra="ValidateOrder"
+on @xtra
+  if ("orderTotal" > 0)
+    if ("itemCount" <= 10)
+      assign("validOrder" = "true")
+      assign("processingNote" = "Order validated successfully")
+    endif
+  endif
+endon
+
+xtra="CalculateDiscount"
+on @xtra
+  if ("orderTotal" >= 1000)
+    if ("customerType" = "vip")
+      assign("discountRate" = 15)
+    endif
+    if ("customerType" = "regular")
+      assign("discountRate" = 5)
+    endif
+  endif
+endon
+
+xtra="ProcessOrder"
+on @xtra
+  if ("validOrder" = "true")
+    assign("finalTotal" = "orderTotal" - ("orderTotal" * ("discountRate" / 100)))
+  endif
+endon

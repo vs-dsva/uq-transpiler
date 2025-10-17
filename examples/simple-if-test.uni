@@ -1,0 +1,37 @@
+$constant PASSING_GRADE 70
+
+online="SimpleGrading"
+
+field="studentId" static() storage(i4) initial-value(0)
+field="grade1" static() storage(i4) initial-value(0)
+field="grade2" static() storage(i4) initial-value(0)
+field="total" static() storage(i4) initial-value(0)
+field="count" static() storage(i4) initial-value(0)
+field="passed" static() storage(a(5)) initial-value("false")
+
+on @START
+  assign("studentId" = 1001)
+  assign("grade1" = 85)
+  assign("grade2" = 92)
+  call('ProcessGrades')
+endon
+
+xtra="ProcessGrades"
+on @xtra
+  assign("total" = 0)
+  assign("count" = 0)
+  
+  if ("grade1" >= 70)
+    assign("total" = "total" + "grade1")
+    assign("count" = "count" + 1)
+  endif
+  
+  if ("grade2" >= 70)
+    assign("total" = "total" + "grade2")
+    assign("count" = "count" + 1)
+  endif
+  
+  if ("count" > 0)
+    assign("passed" = "true")
+  endif
+endon

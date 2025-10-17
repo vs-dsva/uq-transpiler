@@ -1,0 +1,40 @@
+$constant SCHOOL_NAME "Oslo University"
+$constant PASSING_GRADE 60
+$constant MAX_POINTS 100
+
+online="GradingSystem"
+
+field="studentId" static() storage(i4) initial-value(0)
+field="studentName" static() storage(a(100)) initial-value("")
+field="exam1" static() storage(i4) initial-value(0)
+field="exam2" static() storage(i4) initial-value(0)
+field="exam3" static() storage(i4) initial-value(0)
+field="totalPoints" static() storage(i4) initial-value(0)
+field="averageGrade" static() storage(i4) initial-value(0)
+field="passed" static() storage(a(5)) initial-value("false")
+
+on @START
+  assign("studentId" = 20241001)
+  assign("studentName" = "Maria Olsen")
+  assign("exam1" = 85)
+  assign("exam2" = 78)
+  assign("exam3" = 92)
+  call('CalculateTotal')
+  call('CalculateAverage')
+  call('CheckPassing')
+endon
+
+xtra="CalculateTotal"
+on @xtra
+  assign("totalPoints" = "exam1" + "exam2" + "exam3")
+endon
+
+xtra="CalculateAverage"
+on @xtra
+  assign("averageGrade" = "totalPoints" / 3)
+endon
+
+xtra="CheckPassing"
+on @xtra
+  assign("passed" = "true")
+endon

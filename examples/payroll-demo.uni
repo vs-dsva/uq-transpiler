@@ -1,0 +1,28 @@
+$constant COMPANY "Visma Enterprise"
+$constant TAX_RATE 0.25
+
+online="PayrollSystem"
+
+field="empId" static() storage(i4) initial-value(0)
+field="empName" static() storage(a(100)) initial-value("")
+field="grossSalary" static() storage(i4) initial-value(0)
+field="netSalary" static() storage(i4) initial-value(0)
+field="taxAmount" static() storage(i4) initial-value(0)
+
+on @START
+  assign("empId" = 12345)
+  assign("empName" = "Alice Johnson")
+  assign("grossSalary" = 80000)
+  call('CalculateTax')
+  call('CalculateNetSalary')
+endon
+
+xtra="CalculateTax"
+on @xtra
+  assign("taxAmount" = "grossSalary" * 0.25)
+endon
+
+xtra="CalculateNetSalary"
+on @xtra
+  assign("netSalary" = "grossSalary" - "taxAmount")
+endon
