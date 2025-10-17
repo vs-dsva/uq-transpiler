@@ -1,0 +1,9 @@
+online="RestGetDemo"
+
+field="todo" static() storage(a(400)) initial-value("")
+field="status" static() storage(a(20)) initial-value("")
+
+on @START
+  call('restGet', "https://jsonplaceholder.typicode.com/todos/1", "todo")
+  assign("status" = "loaded")
+endon

@@ -130,6 +130,7 @@ output/
 generated/
 build/
 dist/
+transpiled-output/
 
 # Test output
 test-results/

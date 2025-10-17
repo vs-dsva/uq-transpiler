@@ -1,0 +1,191 @@
+Concept {
+  // A Concept program consists of lines, some with statements, some blank
+  Program = Line+ end
+  
+  Line = Statement nl  -- statement
+       | BlankContent nl  -- blank
+  
+  BlankContent = space*  ~(letter | digit | "$" | "*")
+  
+  Statement = ConstantDecl
+            | IncludeDecl
+            | OnlineDecl
+            | XtraDecl
+            | FieldDecl
+            | TableDecl
+            | StreamDecl
+            | FormDecl
+            | ElementDecl
+            | EventHandler
+            | Comment
+
+  // Top-level declarations
+  ConstantDecl = "$constant" identifier value
+  IncludeDecl = "$include" identifier
+  
+  OnlineDecl = "online" "=" stringLiteral OnlineBody
+  OnlineBody = OnlineItem*
+  OnlineItem = nl (FieldDecl | EventHandler | nl)
+  
+  XtraDecl = "xtra" "=" stringLiteral XtraBody
+  XtraBody = XtraItem*
+  XtraItem = nl (EventHandler | XtraStatement | nl)
+  XtraStatement = Assignment | FunctionCall | IfStatement | LoopStatement | ReturnStatement | DatabaseOp
+  
+  // Field declarations
+  FieldDecl = "field" "=" stringLiteral FieldProperty*
+  FieldProperty = identifier "(" PropertyValue ")"
+  PropertyValue = (~")" any)*
+  
+  // Table, Stream, Form, Element declarations (basic support)
+  TableDecl = "table" "=" stringLiteral TableProperty*
+  StreamDecl = "stream" "=" stringLiteral StreamProperty*
+  FormDecl = "form" "=" stringLiteral FormProperty*
+  ElementDecl = "element" "=" stringLiteral ElementProperty*
+  
+  TableProperty = identifier ("(" PropertyValue ")")?
+  StreamProperty = identifier ("(" PropertyValue ")")?
+  FormProperty = identifier ("(" PropertyValue ")")?
+  ElementProperty = identifier ("(" PropertyValue ")")?
+  
+  // Event handlers
+  EventHandler = "on" EventName EventBody "endon"
+  EventName = "@" identifier       -- atEvent
+            | identifier           -- keyEvent
+            | "@xtra"              -- xtraEvent
+  EventBody = EventItem*
+  EventItem = nl (EventStatement | nl)
+  EventStatement = Assignment 
+                 | FunctionCall 
+                 | IfStatement 
+                 | LoopStatement 
+                 | WhileStatement
+                 | CaseStatement
+                 | ReturnStatement
+                 | DatabaseOp
+                 | Comment
+  
+  // Statements
+  Assignment = "assign" "(" stringLiteral "=" Expression ")"
+  
+  FunctionCall = "call" "(" stringLiteral ("," CallArg)* ")"
+  CallArg = ExportClause | ImportClause | Expression
+  ExportClause = "export" "(" ExpressionList? ")"
+  ImportClause = "import" "(" ExpressionList? ")"
+  
+  IfStatement = "if" "(" Expression ")" ThenBody ElseIfPart* ElsePart? "endif"
+  ThenBody = ThenItem*
+  ThenItem = nl (EventStatement | nl)
+  ElseIfPart = "elseif" "(" Expression ")" ElseIfBody
+  ElseIfBody = ElseIfItem*
+  ElseIfItem = nl (EventStatement | nl)
+  ElsePart = "else" ElseBody
+  ElseBody = ElseItem*
+  ElseItem = nl (EventStatement | nl)
+  
+  LoopStatement = "loop" "(" LoopSpec ")" LoopBody "endloop"
+  LoopSpec = stringLiteral "=" Expression "to" Expression  -- forLoop
+           | Expression                                     -- whileLoop
+  LoopBody = LoopItem*
+  LoopItem = nl (EventStatement | nl)
+  
+  WhileStatement = "while" "(" Expression ")" WhileBody "endwhile"
+  WhileBody = WhileItem*
+  WhileItem = nl (EventStatement | nl)
+  
+  CaseStatement = "case" "(" Expression ")" WhenClause+ OtherwiseClause? "endcase"
+  WhenClause = "when" "(" Expression ")" WhenBody
+  WhenBody = WhenItem*
+  WhenItem = nl (EventStatement | nl)
+  OtherwiseClause = "otherwise" OtherwiseBody
+  OtherwiseBody = OtherwiseItem*
+  OtherwiseItem = nl (EventStatement | nl)
+  
+  ReturnStatement = "return" ReturnValue?
+  ReturnValue = "(" Expression ")"
+  
+  DatabaseOp = DbOpKeyword "(" DbArgs ")"
+  DbOpKeyword = "find" | "insert" | "update" | "delete" | "first" | "last" | "next" | "previous" | "scroll"
+  DbArgs = stringLiteral ("," Expression)*
+  
+  // Expressions with proper precedence
+  Expression = LogicalOrExpr
+  
+  LogicalOrExpr = LogicalAndExpr (logicalOrOp LogicalAndExpr)*
+  logicalOrOp = "or" | "||"
+  
+  LogicalAndExpr = EqualityExpr (logicalAndOp EqualityExpr)*
+  logicalAndOp = "and" | "&&"
+  
+  EqualityExpr = ComparisonExpr (equalityOp ComparisonExpr)*
+  equalityOp = "=" | "<>" | "!="
+  
+  ComparisonExpr = AdditiveExpr (comparisonOp AdditiveExpr)*
+  comparisonOp = "<=" | ">=" | "<" | ">"
+  
+  AdditiveExpr = MultiplicativeExpr (additiveOp MultiplicativeExpr)*
+  additiveOp = "+" | "-" | "&&" | "&"
+  
+  MultiplicativeExpr = UnaryExpr (multiplicativeOp UnaryExpr)*
+  multiplicativeOp = "*" | "/" | "%"
+  
+  UnaryExpr = unaryOp UnaryExpr  -- unary
+            | PrimaryExpr        -- primary
+  unaryOp = "not" | "-" | "+"
+  
+  PrimaryExpr = number                -- number
+              | stringLiteral         -- string
+              | fieldReference        -- field
+              | identifier            -- identifier
+              | "(" Expression ")"    -- paren
+              | FunctionInvocation    -- function
+              | StatusCall            -- status
+  
+  FunctionInvocation = identifier "(" ExpressionList? ")"
+  StatusCall = "status" "(" stringLiteral ")"
+  
+  ExpressionList = Expression ("," Expression)*
+  
+  // Lexical rules
+  Comment = "*" (~nl any)*
+  
+  stringLiteral = "\"" doubleStringChar* "\""
+                | "'" singleStringChar* "'"
+  
+  doubleStringChar = "\\" any  -- escaped
+                   | ~("\"" | "\\") any  -- regular
+  
+  singleStringChar = "\\" any  -- escaped
+                   | ~("'" | "\\") any  -- regular
+  
+  fieldReference = "\"" (~"\"" any)+ "\""
+  
+  number = digit+ ("." digit+)?  -- float
+         | digit+                 -- int
+  
+  identifier = identifierStart identifierPart*
+  identifierStart = letter | "_"
+  identifierPart = letter | digit | "_" | "-"
+  
+  value = (~nl any)+  // For constant values - captures rest of line
+  
+  // Keywords (case-insensitive)
+  keyword = ( "online" | "xtra" | "field" | "table" | "stream" | "form" | "element"
+            | "on" | "endon" | "if" | "endif" | "else" | "elseif"
+            | "loop" | "endloop" | "while" | "endwhile"
+            | "case" | "endcase" | "when" | "otherwise"
+            | "assign" | "call" | "return" | "escape" | "break" | "continue"
+            | "find" | "insert" | "update" | "delete" | "first" | "last" | "next" | "previous" | "scroll"
+            | "static" | "global" | "storage" | "column" | "key" | "initial-value"
+            | "import" | "export" | "to" | "status"
+            | "and" | "or" | "not" | "in" | "like"
+            ) ~identifierPart
+  
+  // Whitespace and newlines
+  nl = "\r\n" | "\n" | "\r"
+  nlopt = nl?  // Optional newline (for EOF handling)
+  
+  // Reserved words shouldn't be used as identifiers
+  reservedWord = keyword
+}
+

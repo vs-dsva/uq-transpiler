@@ -64,6 +64,22 @@ export class ConceptRuntime {
                 return this.update(...args);
             case 'delete':
                 return this.delete(...args);
+                case 'restGet': {
+                    const [url, maybeField] = args;
+                    const result = await this.restGet(url);
+                    if (maybeField && this.currentApplication && this.currentApplication.fields) {
+                        this.currentApplication.fields[maybeField] = result.data;
+                    }
+                    return result;
+                }
+                case 'restPost': {
+                    const [url, body, maybeField] = args;
+                    const result = await this.restPost(url, body || {});
+                    if (maybeField && this.currentApplication && this.currentApplication.fields) {
+                        this.currentApplication.fields[maybeField] = result.data;
+                    }
+                    return result;
+                }
             default:
                 // Try to call application method
                 if (this.currentApplication && typeof this.currentApplication[functionName] === 'function') {
@@ -272,11 +288,41 @@ export class ConceptRuntime {
      * UI operations (placeholder)
      */
     async showForm(formName) {
-        console.log(`Showing form: ${formName}`);
+                    console.log(`Showing form: ${formName}`);
+                    if (typeof document === 'undefined') return; // Node fallback
+                    let existing = document.querySelector(`dialog[data-form-name="${formName}"]`);
+                    if (existing) {
+                            existing.showModal();
+                            return;
+                    }
+                    const dlg = document.createElement('dialog');
+                    dlg.dataset.formName = formName;
+                    dlg.style.padding = '1rem';
+                    dlg.style.minWidth = '300px';
+                    dlg.innerHTML = `
+                        <form method="dialog" style="display:flex; flex-direction:column; gap:.75rem;">
+                            <h3 style="margin:0; font-family:system-ui;">${formName}</h3>
+                            <div>Hello World from Concept Runtime</div>
+                            <menu style="display:flex; gap:.5rem; justify-content:flex-end; margin:0;">
+                                <button value="ok">OK</button>
+                                <button value="close">Close</button>
+                            </menu>
+                        </form>
+                    `;
+                    dlg.addEventListener('close', () => {
+                            console.log(`Form ${formName} closed with returnValue=${dlg.returnValue}`);
+                    });
+                    document.body.appendChild(dlg);
+                    try { dlg.showModal(); } catch { /* already open */ }
     }
 
     async hideForm(formName) {
-        console.log(`Hiding form: ${formName}`);
+                    console.log(`Hiding form: ${formName}`);
+                    if (typeof document === 'undefined') return;
+                    const dlg = document.querySelector(`dialog[data-form-name="${formName}"]`);
+                    if (dlg && dlg.open) {
+                            dlg.close('hide');
+                    }
     }
 
     async changeElement(elementName, properties) {
@@ -310,6 +356,48 @@ export class ConceptRuntime {
     async sqlExec(database, command) {
         console.log(`Executing SQL on ${database}: ${command}`);
         return { status: '$OK', rows: 0 };
+    }
+
+    /**
+     * REST GET (Node/browser compatible using fetch if available)
+     */
+    async restGet(url, headers = {}) {
+        const fetchFn = (typeof fetch !== 'undefined') ? fetch : null;
+        if (!fetchFn) {
+            console.warn('fetch not available in this environment');
+            return { ok: false, status: 0, data: null, headers: {} };
+        }
+        const res = await fetchFn(url, { headers });
+        return await this._processRestResponse(res);
+    }
+
+    /**
+     * REST POST
+     */
+    async restPost(url, body = {}, headers = {}) {
+        const fetchFn = (typeof fetch !== 'undefined') ? fetch : null;
+        if (!fetchFn) {
+            console.warn('fetch not available in this environment');
+            return { ok: false, status: 0, data: null, headers: {} };
+        }
+        const res = await fetchFn(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...headers },
+            body: (typeof body === 'string' ? body : JSON.stringify(body))
+        });
+        return await this._processRestResponse(res);
+    }
+
+    async _processRestResponse(res) {
+        const text = await res.text();
+        let json;
+        try { json = JSON.parse(text); } catch { json = text; }
+        return {
+            ok: res.ok,
+            status: res.status,
+            data: json,
+            headers: (res.headers ? Object.fromEntries(res.headers.entries()) : {})
+        };
     }
 }
 

@@ -1,8 +1,8 @@
 // Concept to JavaScript Transpiler
 // Main entry point for the transpiler
 
-import { ConceptLexer } from './lexer.js';
-import { ConceptParser } from './parser.js';
+// Using Peggy parser instead of hand-coded lexer/parser
+import { PeggyConceptParser } from './peggy-transpiler.js';
 import { JavaScriptGenerator } from './generator.js';
 import fs from 'fs';
 import path from 'path';
@@ -17,8 +17,8 @@ export class ConceptTranspiler {
             ...options
         };
         
-        this.lexer = new ConceptLexer();
-        this.parser = new ConceptParser();
+        // Use Peggy-based parser
+        this.parser = new PeggyConceptParser();
         this.generator = new JavaScriptGenerator(this.options);
     }
 
@@ -55,13 +55,10 @@ export class ConceptTranspiler {
      */
     async transpile(sourceCode, filename = 'unknown.uni', outputPath = null) {
         try {
-            // Step 1: Lexical analysis
-            const tokens = this.lexer.tokenize(sourceCode, filename);
+            // Step 1: Parse with Ohm (combines lexing and parsing)
+            const ast = this.parser.parse(sourceCode, filename);
             
-            // Step 2: Parsing
-            const ast = this.parser.parse(tokens);
-            
-            // Step 3: Code generation
+            // Step 2: Code generation
             const result = this.generator.generate(ast, filename, outputPath);
             
             return result;

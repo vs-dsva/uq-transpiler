@@ -1,0 +1,168 @@
+$constant GRID_SIZE 3
+$constant MAX_ITERATIONS 1000
+
+online="AdvancedLoops"
+
+field="matrix00" static() storage(i4) initial-value(0)
+field="matrix01" static() storage(i4) initial-value(0)
+field="matrix02" static() storage(i4) initial-value(0)
+field="matrix10" static() storage(i4) initial-value(0)
+field="matrix11" static() storage(i4) initial-value(0)
+field="matrix12" static() storage(i4) initial-value(0)
+field="matrix20" static() storage(i4) initial-value(0)
+field="matrix21" static() storage(i4) initial-value(0)
+field="matrix22" static() storage(i4) initial-value(0)
+field="row" static() storage(i4) initial-value(0)
+field="col" static() storage(i4) initial-value(0)
+field="total" static() storage(i4) initial-value(0)
+field="average" static() storage(i4) initial-value(0)
+field="count" static() storage(i4) initial-value(0)
+field="result" static() storage(i4) initial-value(0)
+field="isPrime" static() storage(a(5)) initial-value("true")
+field="divisor" static() storage(i4) initial-value(2)
+field="testNumber" static() storage(i4) initial-value(17)
+field="fibonacci" static() storage(i4) initial-value(0)
+field="fib1" static() storage(i4) initial-value(0)
+field="fib2" static() storage(i4) initial-value(1)
+field="fibCount" static() storage(i4) initial-value(10)
+field="power" static() storage(i4) initial-value(1)
+field="base" static() storage(i4) initial-value(2)
+field="exponent" static() storage(i4) initial-value(8)
+
+on @START
+  call('InitializeMatrix')
+  call('CalculateMatrixTotal')
+  call('TestPrimeNumber')
+  call('CalculateFibonacci')
+  call('CalculatePower')
+endon
+
+xtra="InitializeMatrix"
+on @xtra
+  assign("row" = 0)
+  loop ("row" = 0 to 2)
+    assign("col" = 0)
+    loop ("col" = 0 to 2)
+      if ("row" = 0)
+        if ("col" = 0)
+          assign("matrix00" = ("row" * 3) + "col" + 1)
+        endif
+        if ("col" = 1)
+          assign("matrix01" = ("row" * 3) + "col" + 1)
+        endif
+        if ("col" = 2)
+          assign("matrix02" = ("row" * 3) + "col" + 1)
+        endif
+      endif
+      if ("row" = 1)
+        if ("col" = 0)
+          assign("matrix10" = ("row" * 3) + "col" + 1)
+        endif
+        if ("col" = 1)
+          assign("matrix11" = ("row" * 3) + "col" + 1)
+        endif
+        if ("col" = 2)
+          assign("matrix12" = ("row" * 3) + "col" + 1)
+        endif
+      endif
+      if ("row" = 2)
+        if ("col" = 0)
+          assign("matrix20" = ("row" * 3) + "col" + 1)
+        endif
+        if ("col" = 1)
+          assign("matrix21" = ("row" * 3) + "col" + 1)
+        endif
+        if ("col" = 2)
+          assign("matrix22" = ("row" * 3) + "col" + 1)
+        endif
+      endif
+    endloop
+  endloop
+endon
+
+xtra="CalculateMatrixTotal"
+on @xtra
+  assign("total" = 0)
+  assign("count" = 0)
+  assign("row" = 0)
+  loop ("row" = 0 to 2)
+    assign("col" = 0)
+    loop ("col" = 0 to 2)
+      assign("count" = "count" + 1)
+      if ("row" = 0)
+        if ("col" = 0)
+          assign("total" = "total" + "matrix00")
+        endif
+        if ("col" = 1)
+          assign("total" = "total" + "matrix01")
+        endif
+        if ("col" = 2)
+          assign("total" = "total" + "matrix02")
+        endif
+      endif
+      if ("row" = 1)
+        if ("col" = 0)
+          assign("total" = "total" + "matrix10")
+        endif
+        if ("col" = 1)
+          assign("total" = "total" + "matrix11")
+        endif
+        if ("col" = 2)
+          assign("total" = "total" + "matrix12")
+        endif
+      endif
+      if ("row" = 2)
+        if ("col" = 0)
+          assign("total" = "total" + "matrix20")
+        endif
+        if ("col" = 1)
+          assign("total" = "total" + "matrix21")
+        endif
+        if ("col" = 2)
+          assign("total" = "total" + "matrix22")
+        endif
+      endif
+    endloop
+  endloop
+  assign("average" = "total" / "count")
+endon
+
+xtra="TestPrimeNumber"
+on @xtra
+  assign("isPrime" = "true")
+  assign("divisor" = 2)
+  loop ("divisor" < "testNumber")
+    assign("result" = "testNumber" / "divisor")
+    assign("result" = "result" * "divisor")
+    if ("result" = "testNumber")
+      assign("isPrime" = "false")
+      assign("divisor" = "testNumber")
+    endif
+    if ("isPrime" = "true")
+      assign("divisor" = "divisor" + 1)
+    endif
+  endloop
+endon
+
+xtra="CalculateFibonacci"
+on @xtra
+  assign("fib1" = 0)
+  assign("fib2" = 1)
+  assign("count" = 2)
+  loop ("count" < "fibCount")
+    assign("fibonacci" = "fib1" + "fib2")
+    assign("fib1" = "fib2")
+    assign("fib2" = "fibonacci")
+    assign("count" = "count" + 1)
+  endloop
+endon
+
+xtra="CalculatePower"
+on @xtra
+  assign("power" = 1)
+  assign("count" = 0)
+  loop ("count" < "exponent")
+    assign("power" = "power" * "base")
+    assign("count" = "count" + 1)
+  endloop
+endon

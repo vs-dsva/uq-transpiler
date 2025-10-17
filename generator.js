@@ -8,6 +8,7 @@ export class JavaScriptGenerator {
             useStrict: true,
             generateComments: true,
             targetES6: true,
+            runtimeModule: options.runtimeModule || null,
             ...options
         };
         
@@ -72,8 +73,10 @@ export class JavaScriptGenerator {
             }
         }
         
-        // Add concept runtime imports
-        this.emit(`import { ConceptRuntime } from "${runtimePath}";`);
+    // Decide runtime module path (allow override via options.runtimeModule)
+    const runtimeImportPath = this.options.runtimeModule || runtimePath;
+    const namedImport = this.options.browserRuntime ? 'ConceptBrowserRuntime as ConceptRuntime' : 'ConceptRuntime';
+    this.emit(`import { ${namedImport} } from "${runtimeImportPath}";`);
         this.emit('');
     }
 
@@ -81,11 +84,12 @@ export class JavaScriptGenerator {
      * Generate code for program node
      */
     generateProgram(node) {
-        // First pass: collect constants, field declarations, and event handlers
+        // First pass: collect constants, field declarations, event handlers, and xtra functions
         this.eventHandlers = [];
+        this.xtraFunctions = [];
         
         for (const stmt of node.body) {
-            if (stmt.type === 'Constant') {
+            if (stmt.type === 'ConstantDeclaration') {
                 this.constants.set(stmt.name, stmt.value);
             } else if (stmt.type === 'FieldDeclaration') {
                 this.fields.set(stmt.name, stmt);
@@ -98,13 +102,16 @@ export class JavaScriptGenerator {
                         this.eventHandlers.push(bodyStmt);
                     }
                 }
-            } else if (stmt.type === 'XtraFunction') {
-                // Collect event handlers from XTRA function body
-                const functionName = this.sanitizeFunctionName(stmt.name);
+            } else if (stmt.type === 'XtraDeclaration') {
+                // Collect xtra functions
+                this.xtraFunctions.push(stmt);
+                // Collect fields and event handlers from XTRA function body
                 for (const bodyStmt of stmt.body) {
-                    if (bodyStmt.type === 'EventHandler') {
+                    if (bodyStmt.type === 'FieldDeclaration') {
+                        this.fields.set(bodyStmt.name, bodyStmt);
+                    } else if (bodyStmt.type === 'EventHandler') {
                         // Store context information
-                        bodyStmt._context = functionName;
+                        bodyStmt._xtraName = stmt.name;
                         this.eventHandlers.push(bodyStmt);
                     }
                 }
@@ -155,6 +162,11 @@ export class JavaScriptGenerator {
             this.generateStatement(stmt);
         }
         
+        // Generate xtra functions as methods
+        for (const xtraFunc of this.xtraFunctions) {
+            this.generateXtraFunction(xtraFunc);
+        }
+        
         // Add main method
         this.emit('async run() {');
         this.increaseIndent();
@@ -166,9 +178,8 @@ export class JavaScriptGenerator {
         this.emit('// Register event handlers');
         for (const eventHandler of this.eventHandlers) {
             const eventName = this.sanitizeEventName(eventHandler.event);
-            const contextSuffix = eventHandler._context ? `_${eventHandler._context}` : '';
-            const eventToRegister = eventHandler._specificEventName || eventHandler.event;
-            this.emit(`this.runtime.registerEventHandler("${eventToRegister}", this.handle_${eventName}${contextSuffix}.bind(this));`);
+            const xtraSuffix = eventHandler._xtraName ? `_${this.sanitizeFunctionName(eventHandler._xtraName)}` : '';
+            this.emit(`this.runtime.registerEventHandler("${eventHandler.event}", this.handle_${eventName}${xtraSuffix}.bind(this));`);
         }
         
         this.emit('await this.runtime.triggerEvent("@START");');
@@ -201,14 +212,14 @@ export class JavaScriptGenerator {
             case 'Comment':
                 this.generateComment(node);
                 break;
-            case 'Include':
+            case 'IncludeDeclaration':
                 this.generateInclude(node);
                 break;
             case 'OnlineApplication':
                 this.generateOnlineApplication(node);
                 break;
-            case 'XtraFunction':
-                this.generateXtraFunction(node);
+            case 'XtraDeclaration':
+                // Handled separately in xtraFunctions array
                 break;
             case 'EventHandler':
                 this.generateEventHandler(node);
@@ -225,10 +236,16 @@ export class JavaScriptGenerator {
             case 'LoopStatement':
                 this.generateLoopStatement(node);
                 break;
+            case 'WhileStatement':
+                this.generateWhileStatement(node);
+                break;
+            case 'CaseStatement':
+                this.generateCaseStatement(node);
+                break;
             case 'FieldDeclaration':
                 // Already handled in first pass
                 break;
-            case 'Constant':
+            case 'ConstantDeclaration':
                 // Already handled in first pass
                 break;
             default:
@@ -241,7 +258,7 @@ export class JavaScriptGenerator {
      */
     generateComment(node) {
         if (this.options.generateComments) {
-            const comment = node.value.replace(/^\*\s*/, '');
+            const comment = node.text.replace(/^\*\s*/, '');
             this.emit(`${this.getIndent()}// ${comment}`);
         }
     }
@@ -250,8 +267,8 @@ export class JavaScriptGenerator {
      * Generate include statement
      */
     generateInclude(node) {
-        this.emit(`${this.getIndent()}// Include: ${node.filename}`);
-        this.emit(`${this.getIndent()}// TODO: Load ${node.filename}.js`);
+        this.emit(`${this.getIndent()}// Include: ${node.name}`);
+        this.emit(`${this.getIndent()}// TODO: Load ${node.name}.js`);
     }
 
     /**
@@ -279,20 +296,15 @@ export class JavaScriptGenerator {
         
         this.emit(`${this.getIndent()}async ${functionName}(params = {}) {`);
         this.increaseIndent();
-        this.emit(`${this.getIndent()}// XTRA function: ${node.name}`);
+        this.emit(`${this.getIndent()}// Xtra function: ${node.name}`);
         
-        // Generate non-event-handler statements directly in the function
+        // Generate event handlers in the xtra - they execute the body
         for (const stmt of node.body) {
-            if (stmt.type !== 'EventHandler') {
-                this.generateStatement(stmt);
-            }
-        }
-        
-        // For event handlers in XTRA functions, trigger the specific event for this function
-        for (const stmt of node.body) {
-            if (stmt.type === 'EventHandler') {
-                const specificEvent = `${stmt.event}_${functionName}`;
-                this.emit(`${this.getIndent()}await this.runtime.triggerEvent("${specificEvent}");`);
+            if (stmt.type === 'EventHandler' && stmt.event === '@xtra') {
+                // Execute xtra body statements directly
+                for (const bodyStmt of stmt.body) {
+                    this.generateStatement(bodyStmt);
+                }
             }
         }
         
@@ -300,13 +312,10 @@ export class JavaScriptGenerator {
         this.emit(`${this.getIndent()}}`);
         this.emit('');
         
-        // Generate event handlers as separate class methods with XTRA function context
+        // Generate event handlers as separate methods if they exist
         for (const stmt of node.body) {
             if (stmt.type === 'EventHandler') {
-                // Store the specific event name for registration
-                const specificEvent = `${stmt.event}_${functionName}`;
-                stmt._specificEventName = specificEvent;
-                this.generateEventHandler(stmt, functionName);
+                this.generateEventHandler(stmt, node.name);
             }
         }
     }
@@ -314,13 +323,13 @@ export class JavaScriptGenerator {
     /**
      * Generate event handler
      */
-    generateEventHandler(node, context = '') {
+    generateEventHandler(node, xtraName = '') {
         const eventName = this.sanitizeEventName(node.event);
-        const contextSuffix = context ? `_${context}` : '';
+        const xtraSuffix = xtraName ? `_${this.sanitizeFunctionName(xtraName)}` : '';
         
-        this.emit(`${this.getIndent()}async handle_${eventName}${contextSuffix}(event) {`);
+        this.emit(`${this.getIndent()}async handle_${eventName}${xtraSuffix}(event) {`);
         this.increaseIndent();
-        this.emit(`${this.getIndent()}// Event handler: ${node.event}${context ? ` (${context})` : ''}`);
+        this.emit(`${this.getIndent()}// Event handler: ${node.event}${xtraName ? ` (in ${xtraName})` : ''}`);
         
         for (const stmt of node.body) {
             this.generateStatement(stmt);
@@ -329,9 +338,6 @@ export class JavaScriptGenerator {
         this.decreaseIndent();
         this.emit(`${this.getIndent()}}`);
         this.emit('');
-        
-        // Register event handler in constructor
-        this.emit(`${this.getIndent()}// Register event handler for ${node.event}`);
     }
 
     /**
@@ -347,16 +353,40 @@ export class JavaScriptGenerator {
      * Generate function call
      */
     generateFunctionCall(node) {
-        const functionName = this.sanitizeFunctionName(node.name);
-        const args = node.arguments.map(arg => this.generateExpression(arg)).join(', ');
+        const args = node.arguments && node.arguments.length > 0 
+            ? node.arguments.map(arg => this.generateExpression(arg)).join(', ')
+            : '';
         
-        this.emit(`${this.getIndent()}await this.runtime.call("${node.name}", ${args});`);
+        this.emit(`${this.getIndent()}await this.runtime.call("${node.name}"${args ? ', ' + args : ''});`);
     }
 
     /**
      * Generate expression
      */
     generateExpression(node) {
+        // Handle primitive values
+        if (typeof node === 'number') {
+            return node.toString();
+        }
+        if (typeof node === 'string') {
+            // Check if it's a field name
+            if (this.fields.has(node)) {
+                return this.generateFieldReference(node);
+            }
+            return `"${this.escapeString(node)}"`;
+        }
+        if (typeof node === 'boolean') {
+            return node.toString();
+        }
+        if (node === null || node === undefined) {
+            return 'null';
+        }
+        
+        // Handle AST nodes
+        if (!node.type) {
+            return `/* Unknown: ${JSON.stringify(node)} */`;
+        }
+        
         switch (node.type) {
             case 'NumberLiteral':
                 return node.value.toString();
@@ -368,16 +398,24 @@ export class JavaScriptGenerator {
                 return `"${this.escapeString(node.value)}"`;
             case 'FieldReference':
                 return this.generateFieldReference(node.name);
+            case 'ConstantReference':
+                return `this.constants.${node.name}`;
             case 'Identifier':
                 return this.sanitizeIdentifier(node.name);
             case 'BinaryExpression':
                 return this.generateBinaryExpression(node);
             case 'UnaryExpression':
                 return this.generateUnaryExpression(node);
+            case 'FunctionCall':
+                // Handle function calls in expressions
+                const args = node.arguments && node.arguments.length > 0
+                    ? node.arguments.map(arg => this.generateExpression(arg)).join(', ')
+                    : '';
+                return `this.${this.sanitizeFunctionName(node.name)}(${args})`;
             case 'ExportClause':
-                return `{ exports: [${node.arguments.map(arg => this.generateExpression(arg)).join(', ')}] }`;
+                return `{ exports: [${node.expressions.map(arg => this.generateExpression(arg)).join(', ')}] }`;
             case 'ImportClause':
-                return `{ imports: [${node.arguments.map(arg => this.generateExpression(arg)).join(', ')}] }`;
+                return `{ imports: [${node.expressions.map(arg => this.generateExpression(arg)).join(', ')}] }`;
             default:
                 return `/* TODO: Generate ${node.type} */`;
         }
@@ -408,16 +446,24 @@ export class JavaScriptGenerator {
      * Generate field initialization
      */
     generateFieldInitialization(field) {
-        const fieldName = this.sanitizeIdentifier(field.name);
         let initialValue = 'null';
         let fieldType = 'any';
         
-        if (field.properties) {
-            if (field.properties['initial-value']) {
-                initialValue = field.properties['initial-value'];
-            }
-            if (field.properties.storage) {
-                fieldType = this.translateStorageType(field.properties.storage);
+        // Field properties is an array of {name, arguments} objects from Peggy
+        if (field.properties && Array.isArray(field.properties)) {
+            for (const prop of field.properties) {
+                if (prop.name === 'initial-value' && prop.arguments && prop.arguments.length > 0) {
+                    initialValue = this.generateExpression(prop.arguments[0]);
+                }
+                if (prop.name === 'storage' && prop.arguments && prop.arguments.length > 0) {
+                    const storageType = prop.arguments[0];
+                    if (typeof storageType === 'object' && storageType.type === 'FunctionCall') {
+                        // Handle storage(a(100)) format
+                        fieldType = this.translateStorageType(`${storageType.name}(${storageType.arguments.join(',')})`);
+                    } else {
+                        fieldType = this.translateStorageType(storageType);
+                    }
+                }
             }
         }
         
@@ -512,6 +558,11 @@ export class JavaScriptGenerator {
      * Escape string literals
      */
     escapeString(str) {
+        if (str === undefined || str === null) {
+            console.error('escapeString called with:', str);
+            console.trace();
+            throw new Error(`escapeString called with undefined/null value`);
+        }
         return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
     }
 
@@ -543,11 +594,27 @@ export class JavaScriptGenerator {
         
         this.decreaseIndent();
         
-        if (node.elseBody && node.elseBody.length > 0) {
+        // Handle elseif parts
+        if (node.elseIfParts && node.elseIfParts.length > 0) {
+            for (const elseIfPart of node.elseIfParts) {
+                const elseIfCondition = this.generateExpression(elseIfPart.condition);
+                this.emit(`${this.getIndent()}} else if (${elseIfCondition}) {`);
+                this.increaseIndent();
+                
+                for (const stmt of elseIfPart.body) {
+                    this.generateStatement(stmt);
+                }
+                
+                this.decreaseIndent();
+            }
+        }
+        
+        // Handle else part
+        if (node.elsePart && node.elsePart.length > 0) {
             this.emit(`${this.getIndent()}} else {`);
             this.increaseIndent();
             
-            for (const stmt of node.elseBody) {
+            for (const stmt of node.elsePart) {
                 this.generateStatement(stmt);
             }
             
@@ -561,23 +628,82 @@ export class JavaScriptGenerator {
      * Generate loop statement
      */
     generateLoopStatement(node) {
-        if (node.loopVar && node.startValue && node.endValue) {
-            // For-style loop
-            const loopVar = this.generateFieldReference(node.loopVar);
+        if (node.variable && node.startValue !== null && node.endValue !== null) {
+            // For-style loop with variable
+            const loopVar = this.generateFieldReference(node.variable);
             const startExpr = this.generateExpression(node.startValue);
             const endExpr = this.generateExpression(node.endValue);
             
             this.emit(`${this.getIndent()}for (${loopVar} = ${startExpr}; ${loopVar} <= ${endExpr}; ${loopVar}++) {`);
         } else if (node.condition) {
-            // While-style loop
+            // While-style loop with condition
             const condition = this.generateExpression(node.condition);
             this.emit(`${this.getIndent()}while (${condition}) {`);
+        } else {
+            this.emit(`${this.getIndent()}// Unknown loop type`);
+            this.emit(`${this.getIndent()}while (false) {`);
         }
         
         this.increaseIndent();
         
         for (const stmt of node.body) {
             this.generateStatement(stmt);
+        }
+        
+        this.decreaseIndent();
+        this.emit(`${this.getIndent()}}`);
+    }
+
+    /**
+     * Generate while statement
+     */
+    generateWhileStatement(node) {
+        const condition = this.generateExpression(node.condition);
+        this.emit(`${this.getIndent()}while (${condition}) {`);
+        this.increaseIndent();
+        
+        for (const stmt of node.body) {
+            this.generateStatement(stmt);
+        }
+        
+        this.decreaseIndent();
+        this.emit(`${this.getIndent()}}`);
+    }
+
+    /**
+     * Generate case statement
+     */
+    generateCaseStatement(node) {
+        const expr = this.generateExpression(node.expression);
+        this.emit(`${this.getIndent()}switch (${expr}) {`);
+        this.increaseIndent();
+        
+        // Generate when clauses
+        if (node.whenClauses) {
+            for (const whenClause of node.whenClauses) {
+                const caseValue = this.generateExpression(whenClause.condition);
+                this.emit(`${this.getIndent()}case ${caseValue}:`);
+                this.increaseIndent();
+                
+                for (const stmt of whenClause.body) {
+                    this.generateStatement(stmt);
+                }
+                
+                this.emit(`${this.getIndent()}break;`);
+                this.decreaseIndent();
+            }
+        }
+        
+        // Generate otherwise clause
+        if (node.otherwiseClause) {
+            this.emit(`${this.getIndent()}default:`);
+            this.increaseIndent();
+            
+            for (const stmt of node.otherwiseClause) {
+                this.generateStatement(stmt);
+            }
+            
+            this.decreaseIndent();
         }
         
         this.decreaseIndent();

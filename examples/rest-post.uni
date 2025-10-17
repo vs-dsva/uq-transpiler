@@ -1,0 +1,9 @@
+online="RestPostDemo"
+
+field="created" static() storage(a(400)) initial-value("")
+field="status" static() storage(a(20)) initial-value("")
+
+on @START
+  call('restPost', "https://jsonplaceholder.typicode.com/posts", export("{\"title\":\"foo\",\"body\":\"bar\",\"userId\":1}"), "created")
+  assign("status" = "posted")
+endon

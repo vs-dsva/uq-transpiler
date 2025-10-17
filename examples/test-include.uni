@@ -1,0 +1,22 @@
+* Test program using include files
+
+$constant TAX_RATE 0.15
+$constant PI 3.14159
+
+online="IncludeTest"
+
+field="price" static() storage(f8) initial-value(0.0)
+field="tax" static() storage(f8) initial-value(0.0)
+field="total" static() storage(f8) initial-value(0.0)
+
+on @START
+  * Test tax calculation with price = 100
+  assign("price" = 100.0)
+  call('CalculateTax')
+endon
+
+xtra="CalculateTax"
+on @xtra
+  assign("tax" = "price" * $TAX_RATE)
+  assign("total" = "price" + "tax")
+endon

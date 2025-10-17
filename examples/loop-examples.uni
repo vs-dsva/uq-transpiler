@@ -1,0 +1,107 @@
+$constant MAX_COUNT 10
+$constant ARRAY_SIZE 5
+$constant MULTIPLIER 3
+
+online="LoopExamples"
+
+field="counter" static() storage(i4) initial-value(0)
+field="sum" static() storage(i4) initial-value(0)
+field="product" static() storage(i4) initial-value(1)
+field="i" static() storage(i4) initial-value(0)
+field="j" static() storage(i4) initial-value(0)
+field="rowTotal" static() storage(i4) initial-value(0)
+field="grandTotal" static() storage(i4) initial-value(0)
+field="factorial" static() storage(i4) initial-value(1)
+field="number" static() storage(i4) initial-value(5)
+field="tempValue" static() storage(i4) initial-value(0)
+field="loopCount" static() storage(i4) initial-value(0)
+field="maxIterations" static() storage(i4) initial-value(100)
+field="found" static() storage(a(5)) initial-value("false")
+field="searchValue" static() storage(i4) initial-value(7)
+
+on @START
+  call('TestSimpleForLoop')
+  call('TestWhileStyleLoop')
+  call('TestNestedLoops')
+  call('TestLoopWithConstants')
+  call('TestLoopWithFieldReferences')
+  call('TestFactorial')
+  call('TestBreakCondition')
+endon
+
+xtra="TestSimpleForLoop"
+on @xtra
+  assign("sum" = 0)
+  loop ("i" = 1 to 10)
+    assign("sum" = "sum" + "i")
+  endloop
+endon
+
+xtra="TestWhileStyleLoop"
+on @xtra
+  assign("counter" = 0)
+  assign("sum" = 0)
+  loop ("counter" < 20)
+    assign("counter" = "counter" + 1)
+    assign("sum" = "sum" + "counter")
+  endloop
+endon
+
+xtra="TestNestedLoops"
+on @xtra
+  assign("grandTotal" = 0)
+  loop ("i" = 1 to 3)
+    assign("rowTotal" = 0)
+    loop ("j" = 1 to 4)
+      assign("rowTotal" = "rowTotal" + ("i" * "j"))
+    endloop
+    assign("grandTotal" = "grandTotal" + "rowTotal")
+  endloop
+endon
+
+xtra="TestLoopWithConstants"
+on @xtra
+  assign("sum" = 0)
+  assign("tempValue" = 10)
+  loop ("counter" = 1 to "tempValue")
+    assign("sum" = "sum" + ("counter" * 3))
+  endloop
+endon
+
+xtra="TestLoopWithFieldReferences"
+on @xtra
+  assign("i" = 1)
+  assign("counter" = 5)
+  assign("sum" = 0)
+  loop ("i" = 1 to "counter")
+    assign("sum" = "sum" + "i")
+  endloop
+endon
+
+xtra="TestFactorial"
+on @xtra
+  assign("factorial" = 1)
+  assign("number" = 5)
+  assign("i" = 1)
+  loop ("i" <= "number")
+    assign("factorial" = "factorial" * "i")
+    assign("i" = "i" + 1)
+  endloop
+endon
+
+xtra="TestBreakCondition"
+on @xtra
+  assign("found" = "false")
+  assign("loopCount" = 0)
+  assign("counter" = 1)
+  loop ("counter" <= "maxIterations")
+    assign("loopCount" = "loopCount" + 1)
+    if ("counter" = "searchValue")
+      assign("found" = "true")
+      assign("counter" = "maxIterations" + 1)
+    endif
+    if ("found" = "false")
+      assign("counter" = "counter" + 1)
+    endif
+  endloop
+endon

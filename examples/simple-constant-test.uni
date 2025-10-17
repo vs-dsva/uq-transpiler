@@ -1,0 +1,11 @@
+* Simple test without constant references
+
+online="SimpleTest"
+
+field="x" static() storage(i4) initial-value(0)
+field="y" static() storage(i4) initial-value(0)
+
+on @START
+  assign("x" = 10)
+  assign("y" = 20)
+endon

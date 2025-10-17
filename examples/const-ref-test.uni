@@ -1,0 +1,9 @@
+$constant MYCONST 100
+
+online="ConstTest"
+
+field="x" static() storage(i4) initial-value(0)
+
+on @START
+  assign("x" = $MYCONST)
+endon
