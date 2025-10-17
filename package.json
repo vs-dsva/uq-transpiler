@@ -7,8 +7,9 @@
   "scripts": {
     "start": "node cli.js",
     "test": "node test.js",
-    "build": "npm run test",
-    "dev": "node --inspect cli.js"
+    "build": "echo 'Build completed - static files ready'",
+    "dev": "node --inspect cli.js",
+    "vercel-build": "npm run test"
   },
   "keywords": [
     "concept",

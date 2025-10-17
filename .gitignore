@@ -140,6 +140,9 @@ test-output/
 *.backup
 *.old
 
+# Vercel
+.vercel
+
 # IDE specific files
 *.suo
 *.ntvs*
