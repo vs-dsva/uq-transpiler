@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install --no-audit --no-fund && npm run build",
+  "buildCommand": "npm install --no-audit --no-fund && npm run build && echo --- DIST LISTING --- && ls -R dist || dir dist",
   "outputDirectory": "dist",
   "framework": "vite",
   "env": {
