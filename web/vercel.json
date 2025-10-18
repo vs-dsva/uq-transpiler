@@ -1,0 +1,5 @@
+{
+  "buildCommand": "npm install --no-audit --no-fund && npm run build:web && echo --- WEB DIST LISTING --- && ls -R dist-web || dir dist-web",
+  "outputDirectory": "dist-web",
+  "framework": "vite"
+}

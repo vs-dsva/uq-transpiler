@@ -10,7 +10,8 @@
     "build": "vite build",
     "dev": "node --inspect cli.js",
     "web:dev": "vite",
-    "web:build": "vite build",
+  "web:build": "vite build",
+  "build:web": "vite build",
     "vercel-build": "npm run test && npm run build"
   },
   "keywords": [
