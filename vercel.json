@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist-web",
+  "framework": "vite",
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD || echo 'Changes detected'"
+}

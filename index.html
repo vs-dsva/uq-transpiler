@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Concept Transpiler Demo</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
+    header { margin-bottom: 1.5rem; }
+    .actions { display: flex; gap: .75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    button { cursor: pointer; padding: .5rem .9rem; font-size: .9rem; }
+    #log { white-space: pre-wrap; background:#f5f5f5; padding:1rem; border:1px solid #ddd; min-height:120px; }
+    dialog { border: none; border-radius: 8px; box-shadow:0 4px 16px rgba(0,0,0,.25); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Concept Transpiler Browser Demo</h1>
+    <p>Quick test harness deployed on Vercel.</p>
+  </header>
+  <div class="actions">
+    <button id="helloBtn">Hello Dialog</button>
+    <button id="startBtn">Trigger @START</button>
+  </div>
+  <section id="log"></section>
+  <script type="module">
+    import { ConceptWebRuntime } from './concept-web-runtime.js';
+
+    const runtime = new ConceptWebRuntime();
+    window.conceptRuntime = runtime; // expose for console tests
+
+    const logEl = document.getElementById('log');
+    const log = (msg) => { logEl.textContent += msg + '\n'; };
+
+    document.getElementById('helloBtn').addEventListener('click', () => {
+      runtime.call('helloDialog', 'Hello from Concept in the Browser');
+      log('Opened hello dialog');
+    });
+
+    document.getElementById('startBtn').addEventListener('click', async () => {
+      // Simulate an application with a @START handler (mock)
+      runtime.registerEventHandler('@START', async () => {
+        log('Mock @START handler executed');
+      });
+      await runtime.triggerEvent('@START');
+    });
+
+    // Auto-show dialog on load (optional)
+    runtime.call('helloDialog');
+  </script>
+</body>
+</html>

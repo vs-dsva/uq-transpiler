@@ -11,7 +11,7 @@
     "dev": "node --inspect cli.js",
     "web:dev": "vite",
     "web:build": "vite build",
-  "vercel-build": "npm run test && npm run build"
+    "vercel-build": "npm run test && npm run build"
   },
   "keywords": [
     "concept",
