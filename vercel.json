@@ -1,6 +1,6 @@
 {
   "buildCommand": "npm install --no-audit --no-fund && npm run build",
-  "outputDirectory": "dist-web",
+  "outputDirectory": "dist",
   "framework": "vite",
   "env": {
     "NODE_ENV": "production",

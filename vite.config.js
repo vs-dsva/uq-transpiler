@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [],
   build: {
     target: 'es2018',
-    outDir: 'dist-web', // now relative to project root
+    outDir: 'dist', // use conventional Vercel-compatible output dir
     emptyOutDir: true
   }
 });
