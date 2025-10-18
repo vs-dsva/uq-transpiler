@@ -1,9 +1,10 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm install --no-audit --no-fund && npm run build",
   "outputDirectory": "dist-web",
   "framework": "vite",
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "VITE_APP_MODE": "production"
   },
   "ignoreCommand": "git diff --quiet HEAD^ HEAD || echo 'Changes detected'"
 }
