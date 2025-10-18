@@ -1,0 +1,11 @@
+online="MembershipRangeDemo"
+  field="val" static() storage(i4) initial-value(5)
+  field="isValid" static() storage(bit) initial-value(0)
+  field="rangeInfo" static() storage(a(40)) initial-value("")
+
+  on @START
+    if ("val" in (1,3,5,7))
+      assign("isValid" = 1)
+    endif
+    assign("rangeInfo" = "val" : 10)
+  endon

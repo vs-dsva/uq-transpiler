@@ -1,10 +1,10 @@
 import { BrowserConceptTranspiler } from './browser-transpiler.js';
-import ConceptBrowserRuntime from '../concept-runtime-browser.js';
+import ConceptWebRuntime from '../concept-web-runtime.js';
 
 // Simple in-browser evaluation harness
 const transpiler = new BrowserConceptTranspiler();
 // Expose browser runtime class so generated code (after import stripping) can instantiate it
-window.ConceptRuntime = ConceptBrowserRuntime;
+window.ConceptRuntime = ConceptWebRuntime;
 
 function setStatus(msg, ok=true) {
   const el = document.getElementById('status');
@@ -63,7 +63,7 @@ function runConcept() {
 
   // Transform ES module import of concept-runtime into a global reference, strip export
   let cleaned = jsCode
-    .replace(/import[^\n]*concept-runtime-browser[^\n]*\n/, 'const ConceptRuntime = window.ConceptRuntime;\n')
+    .replace(/import[^\n]*concept-web-runtime[^\n]*\n/, 'const ConceptRuntime = window.ConceptRuntime;\n')
     .replace(/export default ConceptApplication;?\n?/, '');
 
   // Wrap code in an IIFE so we can reliably capture the class even if globals are polluted

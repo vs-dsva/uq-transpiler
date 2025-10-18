@@ -5,7 +5,7 @@ import { JavaScriptGenerator } from '../generator.js';
 
 export class BrowserConceptTranspiler {
   constructor(options = {}) {
-  this.generator = new JavaScriptGenerator({ ...options, runtimeModule: './concept-runtime-browser.js', browserRuntime: true });
+  this.generator = new JavaScriptGenerator({ ...options, runtimeModule: './concept-web-runtime.js', browserRuntime: true });
   }
 
   transpile(source, filename = 'input.uni') {

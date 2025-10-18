@@ -399,6 +399,38 @@ export class ConceptRuntime {
             headers: (res.headers ? Object.fromEntries(res.headers.entries()) : {})
         };
     }
+
+    /**
+     * SUBSTR equivalent
+     * @param {string} source
+     * @param {number} start 1-based
+     * @param {number} length number of characters
+     */
+    substr(source, start, length) {
+        if (source == null) return '';
+        const s = Math.max(1, start|0) - 1;
+        const end = length != null ? s + (length|0) : source.length;
+        return String(source).substring(s, end);
+    }
+
+    /**
+     * WORD equivalent: split on whitespace and return index (1-based)
+     * @param {string} source
+     * @param {number} index 1-based word index
+     */
+    word(source, index) {
+        if (source == null) return '';
+        const parts = String(source).trim().split(/\s+/);
+        const i = (index|0) - 1;
+        return (i >= 0 && i < parts.length) ? parts[i] : '';
+    }
+
+    /**
+     * Range helper for RangeExpression objects {start,end}
+     */
+    range(start, end) {
+        return { start, end };
+    }
 }
 
 // Helper functions for common Concept operations

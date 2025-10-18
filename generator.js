@@ -56,8 +56,8 @@ export class JavaScriptGenerator {
             this.emit('');
         }
         
-        // Calculate relative path to concept-runtime.js
-        let runtimePath = "./concept-runtime.js";
+    // Calculate relative path to node runtime file
+    let runtimePath = "./concept-node-runtime.js";
         if (outputPath) {
             // Simple path calculation for subdirectories
             const outputPathParts = outputPath.split(/[/\\]/);
@@ -65,7 +65,7 @@ export class JavaScriptGenerator {
             
             if (nestingLevel > 0) {
                 // If we're in a subdirectory, go back to parent
-                runtimePath = "../concept-runtime.js";
+                runtimePath = "../concept-node-runtime.js";
                 // Add additional ../ for deeper nesting
                 for (let i = 1; i < nestingLevel; i++) {
                     runtimePath = "../" + runtimePath;
@@ -406,11 +406,24 @@ export class JavaScriptGenerator {
                 return this.generateBinaryExpression(node);
             case 'UnaryExpression':
                 return this.generateUnaryExpression(node);
+            case 'MembershipExpression':
+                return this.generateMembershipExpression(node);
+            case 'RangeExpression':
+                return this.generateRangeExpression(node);
+            case 'SubstringExpression':
+                return this.generateSubstringExpression(node);
             case 'FunctionCall':
                 // Handle function calls in expressions
                 const args = node.arguments && node.arguments.length > 0
                     ? node.arguments.map(arg => this.generateExpression(arg)).join(', ')
                     : '';
+                // Intrinsics SUBSTR and WORD map to runtime helpers
+                if (node.name.toLowerCase() === 'substr') {
+                    return `this.runtime.substr(${args})`;
+                }
+                if (node.name.toLowerCase() === 'word') {
+                    return `this.runtime.word(${args})`;
+                }
                 return `this.${this.sanitizeFunctionName(node.name)}(${args})`;
             case 'ExportClause':
                 return `{ exports: [${node.expressions.map(arg => this.generateExpression(arg)).join(', ')}] }`;
@@ -430,6 +443,35 @@ export class JavaScriptGenerator {
         const operator = this.translateOperator(node.operator);
         
         return `(${left} ${operator} ${right})`;
+    }
+
+    /**
+     * Generate membership expression value IN (list)
+     */
+    generateMembershipExpression(node) {
+        const valueExpr = this.generateExpression(node.value);
+        const listExprs = node.list.map(item => this.generateExpression(item)).join(', ');
+        return `([${listExprs}].includes(${valueExpr}))`;
+    }
+
+    /**
+     * Generate range expression start : end (represented as object)
+     */
+    generateRangeExpression(node) {
+        const start = this.generateExpression(node.start);
+        const end = this.generateExpression(node.end);
+        return `{ start: ${start}, end: ${end} }`;
+    }
+
+    /**
+     * Generate substring expression from # infix operator
+     */
+    generateSubstringExpression(node) {
+        const source = this.generateExpression(node.source);
+        const start = this.generateExpression(node.start);
+        const end = this.generateExpression(node.end);
+        // Convert to runtime.substr(source, start, end-start+1)
+        return `this.runtime.substr(${source}, ${start}, (${end} - (${start}) + 1))`;
     }
 
     /**

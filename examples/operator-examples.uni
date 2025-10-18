@@ -1,0 +1,23 @@
+$constant A 2
+$constant B 3
+$constant C 4
+
+online="OperatorShowcase"
+  field="x" static() storage(i4) initial-value(2)
+  field="y" static() storage(i4) initial-value(3)
+  field="z" static() storage(i4) initial-value(4)
+  field="concat1" static() storage(a(40)) initial-value("")
+  field="concat2" static() storage(a(40)) initial-value("")
+  field="power" static() storage(i4) initial-value(0)
+  field="inResult" static() storage(bit) initial-value(0)
+  field="rangeObj" static() storage(a(40)) initial-value("")
+
+  on @START
+    assign("concat1" = "x" & "y")
+    assign("concat2" = "x" && "z")
+    assign("power" = "x" ** "y" ** "z")
+    if ("x" in (2,3,5))
+      assign("inResult" = 1)
+    endif
+    assign("rangeObj" = "x" : "z")
+  endon

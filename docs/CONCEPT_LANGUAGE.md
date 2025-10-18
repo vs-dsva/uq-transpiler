@@ -1,19 +1,26 @@
 # Concept 4GL Language Reference
 
-This document describes the Concept 4GL language syntax and constructs supported by the transpiler.
+This document describes the Concept 4GL language syntax and constructs currently supported by the transpiler. It also integrates selected information from the original reference manual (components, directives, naming rules, operator precedence) to guide future expansion. Unsupported constructs are noted.
 
 ## Table of Contents
 
 1. [Program Structure](#program-structure)
-2. [Constants](#constants)
-3. [Includes](#includes)
-4. [Online Applications](#online-applications)
-5. [Fields](#fields)
-6. [Events](#events)
-7. [Functions (Xtra)](#functions-xtra)
-8. [Control Flow](#control-flow)
-9. [Expressions](#expressions)
-10. [Database Operations](#database-operations)
+2. [Application Components](#application-components)
+3. [Constants](#constants)
+4. [Includes](#includes)
+5. [File Directives & Macros](#file-directives--macros)
+6. [Names & Quoting](#names--quoting)
+7. [Online Applications](#online-applications)
+8. [Functions (Xtra)](#functions-xtra)
+9. [Fields](#fields)
+10. [Events](#events)
+11. [Control Flow](#control-flow)
+12. [Expressions](#expressions)
+13. [Operator Precedence](#operator-precedence)
+14. [Database Operations](#database-operations)
+15. [Elements & Forms (Overview)](#elements--forms-overview)
+16. [Complete Example](#complete-example)
+17. [Notes](#notes)
 
 ---
 
@@ -32,6 +39,25 @@ online="MyApp"
     assign("x" = 100)
   endon
 ```
+
+---
+
+## Application Components
+
+Reference hierarchy (manual):
+
+Application → Stream → Form → Element → Database → Table → Field
+
+Implemented today:
+- Application (online declaration)
+- Xtra sub applications
+- Fields
+- Event handlers
+
+Not yet implemented:
+- Streams, Forms, Elements, Database/Table metadata, Layout definitions, Callback applications.
+
+Future parsing may introduce dedicated AST nodes for these.
 
 ---
 
@@ -83,6 +109,43 @@ $include DatabaseHelpers
 
 ---
 
+## File Directives & Macros
+
+File-level directives influence conditional compilation and test metadata. Current parser handles `$constant` and `$include`. Others are listed for roadmap purposes.
+
+| Directive | Status | Purpose |
+|-----------|--------|---------|
+| `$constant NAME value` | Implemented | Define macro constant (refer as `$NAME`) |
+| `$include ModuleName` | Implemented | Inline include another source file |
+| `$if <MACRO> = <Text>` | Not yet | Conditional compilation start |
+| `$elseif <MACRO> = <Text>` | Not yet | Alternate condition |
+| `$else` | Not yet | Fallback branch |
+| `$endif` | Not yet | End conditional block |
+| `$message <Text>` | Ignored | Compiler-time informational message |
+| `$exit` | Ignored | Stop processing remainder of file |
+| `$test-application name,value` | Not yet | Test expectation declaration |
+
+### Macro Reference Syntax
+
+```concept
+assign("threshold" = $MAX_USERS)
+```
+
+Manual allows width specifiers: `$MAX_USERS[10]` (not parsed currently).
+
+---
+
+## Names & Quoting
+
+Naming rules (simplified from manual):
+- Unquoted identifiers: letters/digits/underscore, start with letter or underscore.
+- Quoted identifiers (double quotes): permit spaces and most printable characters except `@` and `#` inside the name.
+- Field references in expressions commonly appear as quoted names: `"fieldName"`.
+- Transpiler: if a string literal matches a declared field name, it emits a field access (`this.fields["name"]`); otherwise it remains a string constant.
+- Single-quoted text constants exist in full language but grammar currently focuses on double-quoted strings (escape sequences for `"` and `\\`).
+
+---
+
 ## Online Applications
 
 The main application container.
@@ -110,6 +173,49 @@ online="EmployeeManager"
 
 ---
 
+## Functions (Xtra)
+
+XTRA declarations define callable sub applications.
+
+### Syntax
+
+```concept
+xtra="FunctionName"
+on @xtra
+  statements...
+endon
+```
+
+### Example
+
+```concept
+xtra="CalculateTotal"
+on @xtra
+  assign("total" = "subtotal" + "tax")
+  assign("total" = "total" - "discount")
+endon
+```
+
+### Calling Functions
+
+```concept
+call('CalculateTotal')
+call('ProcessData', export("result"))
+```
+
+### JavaScript Output
+
+```javascript
+async CalculateTotal(params = {}) {
+  this.fields["total"] = (this.fields["subtotal"] + this.fields["tax"]);
+  this.fields["total"] = (this.fields["total"] - this.fields["discount"]);
+}
+
+await this.runtime.call("CalculateTotal");
+```
+
+---
+
 ## Fields
 
 Fields are variables that hold data.
@@ -128,12 +234,17 @@ field="name" property1() property2(args) ...
 | `storage(type)` | Data type | `storage(i4)` for int32, `storage(a(100))` for string |
 | `initial-value(val)` | Default value | `initial-value(0)` |
 
-### Storage Types
+### Storage Types (subset implemented)
 
-- `i4` - 32-bit integer
-- `i8` - 64-bit integer
-- `a(n)` - String of length n
-- `f8` - 64-bit float
+| Concept | Meaning | JS | Notes |
+|---------|---------|----|-------|
+| `i1` / `i2` / `i4` | Signed integers | number | Range not enforced |
+| `i8` | 64-bit integer | number | Precision limitations in JS |
+| `f8` | 64-bit float | number | Standard double |
+| `a(n)` | Alphanumeric of length n | string | Length not enforced |
+| `bit` | Boolean | boolean | Represented as true/false |
+
+Unsupported attributes (manual examples): `values(...)`, `callback(...)`, format/range constraints, multi-dimensional arrays.
 
 ### Examples
 
@@ -149,9 +260,9 @@ field="flag" static() storage(i4) initial-value(1)
 ```javascript
 initializeFields() {
   this.fields["counter"] = 0;      // i4
-  this.fields["name"] = "";         // a(50)
-  this.fields["price"] = 0.0;       // f8
-  this.fields["flag"] = 1;          // i4
+  this.fields["name"] = "";        // a(50)
+  this.fields["price"] = 0.0;      // f8
+  this.fields["flag"] = 1;         // i4
 }
 ```
 
@@ -200,50 +311,6 @@ async handle__START(event) {
 async handle_F12(event) {
   this.fields["helpMode"] = 1;
 }
-```
-
----
-
-## Functions (Xtra)
-
-User-defined functions (subroutines).
-
-### Syntax
-
-```concept
-xtra="FunctionName"
-on @xtra
-  statements...
-endon
-```
-
-### Example
-
-```concept
-xtra="CalculateTotal"
-on @xtra
-  assign("total" = "subtotal" + "tax")
-  assign("total" = "total" - "discount")
-endon
-```
-
-### Calling Functions
-
-```concept
-call('CalculateTotal')
-call('ProcessData', export("result"))
-```
-
-### JavaScript Output
-
-```javascript
-async CalculateTotal(params = {}) {
-  this.fields["total"] = (this.fields["subtotal"] + this.fields["tax"]);
-  this.fields["total"] = (this.fields["total"] - this.fields["discount"]);
-}
-
-// Called with:
-await this.runtime.call("CalculateTotal");
 ```
 
 ---
@@ -405,6 +472,25 @@ assign("message" = "Hello, World!")
 
 ---
 
+## Operator Precedence
+
+Ordering (highest to lowest). Implemented subset marked; others future roadmap.
+
+1. Unary: prefix `-` (implemented); legacy `OLD` (not implemented)
+2. Intrinsic functions (e.g. `ABS`, `LENGTH`, `ROUND`) – future as calls
+3. Power `**`, substring/hash `#`, `SUBSTR`, `WORD` – not implemented
+4. Multiplicative: `*`, `/`, `%` – implemented subset
+5. Additive & concatenation: `+`, `-` implemented; `&`, `&&`, comma concat not implemented
+6. Token/membership: `%`, `IN`, `TOKEN`, `JUSTIFY` – not implemented
+7. Comparison: `=`, `<>`, `<`, `>`, `<=`, `>=` implemented; range `:` not implemented
+8. Logical NOT: `not` implemented
+9. Logical AND: `and` implemented
+10. Logical OR: `or` implemented
+
+Parentheses override precedence.
+
+---
+
 ## Database Operations
 
 ### Supported Operations
@@ -443,6 +529,18 @@ async LoadEmployee(params = {}) {
 
 ---
 
+## Elements & Forms (Overview)
+
+Manual defines UI/layout constructs not yet parsed:
+
+- `form="Name"` blocks containing element declarations.
+- `element="Name" type(INPUT|OUTPUT|TEXT|PUSH-BUTTON|CHECK-BOX|RADIO-BUTTON|IMAGE|TREEVIEW|DROP-DOWN-LIST-BOX|DROP-DOWN-COMBO-BOX|LINE|WINDOW|APPLICATION|CALLBACK)` with attributes like `position(...)`, `size(...)`, `connect(...)`, `comment(...)`.
+- Callback elements rely on sub applications (`GetDisplayValue`, `GetSearchValueList`).
+
+Browser runtime currently offers a placeholder `showForm()` implementation for future mapping of parsed forms/elements to HTML/HTMX.
+
+---
+
 ## Complete Example
 
 **Input (payroll.uni):**
@@ -473,7 +571,7 @@ endon
 
 **Output (JavaScript):**
 ```javascript
-import { ConceptRuntime } from "./concept-runtime.js";
+import { ConceptRuntime } from "./concept-node-runtime.js";
 
 class ConceptApplication {
   constructor() {
@@ -525,8 +623,10 @@ export default ConceptApplication;
 
 ## Notes
 
-- All field references use double quotes: `"fieldName"`
-- String literals use double quotes: `"Hello"`
-- Constants use `$` prefix: `$TAX_RATE`
-- All function calls are async in JavaScript output
-- Event handlers are converted to async methods
+- Field references in examples use double quotes: "fieldName"; detection maps them to `this.fields["fieldName"]` when a field exists.
+- String literals shown with double quotes; single-quoted forms are part of full language but not emphasized yet.
+- Constants use `$` prefix when referenced: `$TAX_RATE`.
+- All generated function calls are async.
+- Event handlers are converted to async methods with `handle__EVENTNAME` naming.
+- Unsupported directives (`$if`, `$message`, etc.) are ignored if present.
+- UI elements/forms are planned; current runtime has minimal placeholder logic.

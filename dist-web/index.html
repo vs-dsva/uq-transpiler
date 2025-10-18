@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Concept Transpiler Demo</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 0; padding: 1rem; background:#f7f7f9; }
+    header { margin-bottom:1rem; }
+    textarea { width:100%; height:240px; font-family: monospace; font-size:13px; }
+    #output, #generated { white-space:pre-wrap; background:#fff; padding:0.75rem; border:1px solid #ccc; min-height:120px; overflow:auto; font-family:monospace; }
+    #output { border-color:#4a7; }
+    .row { display:flex; gap:1rem; flex-wrap:wrap; }
+    .col { flex:1 1 380px; min-width:300px; }
+    button { cursor:pointer; padding:0.5rem 1rem; font-size:14px; }
+    .status-error { color:#a00; font-weight:bold; }
+    .status-ok { color:#070; font-weight:bold; }
+  </style>
+  <script type="module" crossorigin src="/assets/index-AbXjOaV2.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Concept 4GL → JavaScript (Browser Demo)</h1>
+    <p>Paste Concept source and click Run to transpile + execute @START.</p>
+  </header>
+
+  <section class="row">
+    <div class="col">
+      <label for="source"><strong>Concept Source (.uni)</strong></label>
+      <textarea id="source"></textarea>
+      <div style="margin-top:0.5rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <button id="btnRun" hx-trigger="click" hx-on="click: runConcept()">Run ▶</button>
+        <button id="btnLoadExample" hx-trigger="click" hx-on="click: loadExample('calculator')">Load Calculator Example</button>
+  <button id="btnLoadFormDemo" hx-trigger="click" hx-on="click: loadExample('formdemo')">Load Form Demo</button>
+        <button id="btnClear" hx-trigger="click" hx-on="click: clearOutput()">Clear Output</button>
+      </div>
+      <p id="status" aria-live="polite"></p>
+    </div>
+    <div class="col">
+      <strong>Generated JavaScript</strong>
+      <div id="generated"></div>
+    </div>
+  </section>
+
+  <section style="margin-top:1rem;">
+    <strong>Runtime Output</strong>
+    <div id="output"></div>
+  </section>
+
+</body>
+</html>

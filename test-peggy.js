@@ -50,7 +50,16 @@ const tests = [
     ['Loop (while-style)', 'online="Test"\non @START\n  loop("count" < 100)\n    assign("count" = "count" + 1)\n  endloop\nendon\n'],
     ['Loop (nested)', 'online="Test"\non @START\n  loop("i" = 1 to 3)\n    loop("j" = 1 to 2)\n      assign("x" = "x" + 1)\n    endloop\n  endloop\nendon\n'],
     ['Loop (with fields)', 'online="Test"\non @START\n  loop("counter" = "start" to "end")\n    assign("sum" = "sum" + "counter")\n  endloop\nendon\n'],
-    ['Binary expression', 'online="Test"\non @START\n  assign("z" = "x" + "y" * 2)\nendon\n']
+    ['Binary expression', 'online="Test"\non @START\n  assign("z" = "x" + "y" * 2)\nendon\n'],
+    ['Concatenation &', 'online="Test"\non @START\n  assign("s" = "a" & "b")\nendon\n'],
+    ['Concatenation &&', 'online="Test"\non @START\n  assign("s" = "a" && "b")\nendon\n'],
+    ['Unary plus', 'online="Test"\non @START\n  assign("v" = +"x")\nendon\n'],
+    ['Power operator', 'online="Test"\non @START\n  assign("p" = "x" ** "y" ** "z")\nendon\n'],
+    ['Membership IN', 'online="Test"\non @START\n  if ("status" in (1,2,3))\n    assign("ok" = 1)\n  endif\nendon\n'],
+    ['Range operator', 'online="Test"\non @START\n  assign("r" = "start" : "finish")\nendon\n']
+    ,['SUBSTR intrinsic', 'online="Test"\non @START\n  assign("sub" = SUBSTR("name", 2, 3))\nendon\n']
+    ,['WORD intrinsic', 'online="Test"\non @START\n  assign("w" = WORD("alpha beta gamma", 2))\nendon\n']
+    ,['Infix # substring', 'online="Test"\non @START\n  assign("slice" = "text" # 2 # 3)\nendon\n']
 ];
 
 tests.forEach(([name, code]) => {

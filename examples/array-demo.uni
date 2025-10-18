@@ -1,0 +1,18 @@
+$constant TITLE "Array Demo"
+
+online="ArrayExample"
+
+field="numbers" static() storage(a(200)) initial-value("")
+field="status" static() storage(a(20)) initial-value("")
+field="result" static() storage(a(200)) initial-value("")
+
+on @START
+  * Build a pseudo array by concatenating values separated by spaces
+  assign("numbers" = "numbers" && "1" && "2" && "3" && "4" && "5")
+  * Check membership using IN list
+  if (3 in (1,2,3,4,5))
+    assign("status" = "found")
+  endif
+  * Range expression example start:end
+  assign("result" = "numbers" && " " && "Range:" && 1 : 5)
+endon

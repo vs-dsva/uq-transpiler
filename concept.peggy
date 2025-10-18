@@ -355,7 +355,21 @@ LogicalAnd
   }
 
 Comparison
-  = left:Additive _ op:CompOp _ right:Additive {
+  = left:Additive __ 'in' __ '(' _ list:ExpressionList? _ ')' {
+    return {
+      type: 'MembershipExpression',
+      value: left,
+      list: list || []
+    }; 
+  }
+  / left:Additive _ ':' _ right:Additive {
+    return {
+      type: 'RangeExpression',
+      start: left,
+      end: right
+    };
+  }
+  / left:Additive _ op:CompOp _ right:Additive {
     return {
       type: 'BinaryExpression',
       operator: op,
@@ -379,7 +393,7 @@ Additive
   }
 
 AddOp
-  = "+" / "-"
+  = "&&" / "&" / "+" / "-"
 
 Multiplicative
   = left:Unary rest:(_ op:MulOp _ right:Unary { return { op, right }; })* {
@@ -389,6 +403,18 @@ Multiplicative
       left: acc,
       right: right
     }), left);
+  }
+  / SubstringInfix
+
+// Infix substring with # operator: expr # start # end
+SubstringInfix
+  = source:Unary _ '#' _ start:Unary _ '#' _ end:Unary {
+    return {
+      type: 'SubstringExpression',
+      source: source,
+      start: start,
+      end: end
+    };
   }
 
 MulOp
@@ -402,7 +428,33 @@ Unary
       operand: expr
     };
   }
-  / Primary
+  / op:"+" _ expr:Unary {
+    return {
+      type: 'UnaryExpression',
+      operator: op,
+      operand: expr
+    };
+  }
+  / Power
+
+// Power operator (right associative)
+Power
+  = left:SubstringPrimary _ "**" _ right:Power {
+    return {
+      type: 'BinaryExpression',
+      operator: '**',
+      left: left,
+      right: right
+    };
+  }
+  / SubstringPrimary
+
+// Allow substring infix after primary before other binary ops
+SubstringPrimary
+  = base:Primary rest:( _ '#' _ start:Primary _ '#' _ end:Primary { return { start, end }; } )? {
+    if (!rest) return base;
+    return { type: 'SubstringExpression', source: base, start: rest.start, end: rest.end };
+  }
 
 Primary
   = "(" _ expr:Expression _ ")" { return expr; }
@@ -432,7 +484,9 @@ StringLiteral
   / "'" chars:SingleStringChar* "'" { return chars.join(''); }
 
 DoubleStringChar
-  = ![\"\r\n] char:. { return char; }
+  = "\\\"" { return '"'; }
+  / "\\\\" { return '\\'; }
+  / ![\"\r\n] char:. { return char; }
 
 SingleStringChar
   = !['\r\n] char:. { return char; }
@@ -451,7 +505,7 @@ Value
 ReservedWord
   = ("if" / "else" / "endif" / "loop" / "endloop" / "while" / "endwhile" / 
      "case" / "when" / "otherwise" / "endcase" / "return" / "and" / "or" / "not" / 
-     "on" / "endon" / "assign" / "call") ![a-zA-Z0-9_]
+     "in" / "on" / "endon" / "assign" / "call" / "substr" / "word") ![a-zA-Z0-9_]
 
 // Whitespace
 _ "whitespace"
