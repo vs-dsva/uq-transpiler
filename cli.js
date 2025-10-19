@@ -227,28 +227,26 @@ program
         try {
             console.log(chalk.blue('🎬 Running transpiler demonstration...'));
             
-            const demoCode = `
+                        const demoCode = `
 $constant DEMO_APP "Concept Demo"
 $include system
 
 online="DemoApplication"
-  default-style-prefix('APP-')
 
 field="message" static() storage(a(100)) initial-value("Welcome to Concept!")
 field="counter" static() storage(i4) initial-value(0)
+field="result" static() storage(a(150)) initial-value("")
 
 on @START
-  assign("message" = "Hello from Concept!")
-  assign("counter" = 1)
-  call('ProcessMessage', export("message", "counter"))
+    assign("message" = "Hello from Concept!")
+    assign("counter" = 1)
+    call('ProcessMessage')
 endon
 
 xtra="ProcessMessage"
-  import("msg", "cnt")
-
 on @xtra
-  assign("@result" = "msg" && " (Count: " && "cnt" && ")")
-  assign("counter" = "counter" + 1)
+    assign("result" = "message" && " (Count: " && "counter" && ")")
+    assign("counter" = "counter" + 1)
 endon
 `;
             

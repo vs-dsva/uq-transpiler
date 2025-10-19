@@ -56,26 +56,23 @@ export class JavaScriptGenerator {
             this.emit('');
         }
         
-    // Calculate relative path to node runtime file
-    let runtimePath = "./concept-node-runtime.js";
+        // Calculate relative path to node runtime file (ignore leading '.' segment)
+        let runtimePath = "./concept-node-runtime.js";
         if (outputPath) {
-            // Simple path calculation for subdirectories
-            const outputPathParts = outputPath.split(/[/\\]/);
-            const nestingLevel = outputPathParts.length - 1;
-            
+            const parts = outputPath.split(/[/\\]/);
+            // Remove filename
+            parts.pop();
+            // Filter out empty and current dir markers
+            const dirParts = parts.filter(p => p && p !== '.');
+            const nestingLevel = dirParts.length;
             if (nestingLevel > 0) {
-                // If we're in a subdirectory, go back to parent
-                runtimePath = "../concept-node-runtime.js";
-                // Add additional ../ for deeper nesting
-                for (let i = 1; i < nestingLevel; i++) {
-                    runtimePath = "../" + runtimePath;
-                }
+                runtimePath = '../'.repeat(nestingLevel) + 'concept-node-runtime.js';
             }
         }
         
     // Decide runtime module path (allow override via options.runtimeModule)
     const runtimeImportPath = this.options.runtimeModule || runtimePath;
-    const namedImport = this.options.browserRuntime ? 'ConceptBrowserRuntime as ConceptRuntime' : 'ConceptRuntime';
+    const namedImport = this.options.browserRuntime ? 'ConceptBrowserRuntime as ConceptRuntime' : 'ConceptNodeRuntime as ConceptRuntime';
     this.emit(`import { ${namedImport} } from "${runtimeImportPath}";`);
         this.emit('');
     }

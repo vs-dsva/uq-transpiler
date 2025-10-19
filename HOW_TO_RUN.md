@@ -1,6 +1,6 @@
-# How to Transpile and Run Concept Code
+# How to Transpile and Run (Experimental)
 
-This guide shows you exactly how to transpile Concept 4GL files to JavaScript and execute them.
+Informal notes for experimenting with the Concept → JS transpiler. Interfaces and output may change; treat everything here as a sandbox.
 
 ## 🔄 Method 1: Transpile and Run Manually
 
@@ -42,7 +42,7 @@ try {
 node runner.js
 ```
 
-## 🚀 Method 2: One-Command Transpile and Run
+## Method 2: One-Command Transpile + Run
 
 Use the built-in `run` command for convenience:
 
@@ -57,7 +57,7 @@ node cli.js run sample-app.uni --keep-js
 node cli.js run sample-app.uni --debug
 ```
 
-## 📝 Example: Complete Workflow
+## Example Workflow
 
 Let's walk through a complete example:
 
@@ -101,7 +101,7 @@ endon
 node cli.js transpile employee.uni -o employee.js
 ```
 
-This generates a JavaScript file like:
+Generates JavaScript roughly like:
 
 ```javascript
 // Generated from employee.uni
@@ -178,9 +178,8 @@ console.log('Employee processed:', app.fields);
 node run-employee.js
 ```
 
-## 🛠️ Development Workflow
-
-### For Development and Testing
+## Development Workflow (CLI)
+### Quick Steps
 
 ```bash
 # 1. Analyze the Concept file first
@@ -193,17 +192,15 @@ node cli.js run myapp.uni --keep-js --debug
 node cli.js transpile myapp.uni -o myapp.js
 ```
 
-### For Production Deployment
-
+### Browser Demo (Vite Preview)
+Build then preview the demo page in `index.html`:
 ```bash
-# 1. Transpile without debug info
-node cli.js transpile-dir ./src -o ./dist
-
-# 2. Run specific applications
-node cli.js run ./dist/main-app.js
+npm run web:build
+npm run web:preview
 ```
+Open the printed localhost URL and paste Concept source.
 
-## 📊 Understanding the Output
+## Understanding Output
 
 When you run a transpiled Concept application, you'll see:
 
@@ -212,26 +209,9 @@ When you run a transpiled Concept application, you'll see:
 3. **Function Calls**: XTRA functions execute business logic
 4. **Final State**: All field values after processing
 
-Example output:
-```
-🚀 Running Concept Application...
-🎯 Event: @START triggered
-📝 Fields initialized:
-   Employee ID: 1001
-   Name: Alice Johnson
-   Gross Salary: $80000
-💰 Net salary calculated: $60000
-✅ Application completed!
-📊 Final state: {
-  empId: 1001,
-  empName: 'Alice Johnson',
-  grossSalary: 80000,
-  netSalary: 60000,
-  '@info': 'Employee Alice Johnson earns $60000 net'
-}
-```
+Output will list field mutations during @START and subsequent calls; formatting may vary between versions.
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -252,11 +232,11 @@ node cli.js analyze problematic.uni --ast
 node cli.js run problematic.uni --debug --keep-js
 ```
 
-## 🎯 Next Steps
+## Next Steps / Ideas
 
-- Transpile real files from your repository: `node cli.js run ../hrm/basis/appl/someFile.uni`
-- Create custom runtime extensions for database operations
-- Build web interfaces that use the transpiled JavaScript
-- Integrate with Node.js servers and modern frameworks
+- Try a loop or case statement example.
+- Add a new intrinsic to grammar locally and test it.
+- Inspect generated JS for patterns to refine.
 
-The transpiler successfully converts Concept business logic to maintainable JavaScript while preserving all the original functionality!
+---
+Experimental project: no guarantees of completeness or stability.

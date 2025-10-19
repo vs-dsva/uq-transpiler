@@ -9,7 +9,7 @@
 
 // Entry point
 Program
-  = _ stmts:Statement* _ { 
+  = _ stmts:Statement* (_ nl)? _ { 
     return {
       type: 'Program',
       body: filterNull(stmts),

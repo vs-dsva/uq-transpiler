@@ -5,48 +5,166 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Concept Transpiler Demo</title>
   <style>
-    body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
-    header { margin-bottom: 1.5rem; }
-    .actions { display: flex; gap: .75rem; flex-wrap: wrap; margin-bottom: 1rem; }
-    button { cursor: pointer; padding: .5rem .9rem; font-size: .9rem; }
-    #log { white-space: pre-wrap; background:#f5f5f5; padding:1rem; border:1px solid #ddd; min-height:120px; }
-    dialog { border: none; border-radius: 8px; box-shadow:0 4px 16px rgba(0,0,0,.25); }
+    body { font-family: system-ui, Arial, sans-serif; margin: 1.25rem; }
+    header { margin-bottom: 1rem; }
+    .actions { display: flex; gap: .6rem; flex-wrap: wrap; margin: .5rem 0 0 0; }
+    button { cursor: pointer; padding: .45rem .8rem; font-size: .85rem; }
+    .layout { display:flex; gap:1rem; align-items:stretch; }
+    .panel { flex:1 1 50%; display:flex; flex-direction:column; }
+    .panel h2 { margin:0 0 .4rem 0; font-size: .9rem; letter-spacing:.5px; text-transform:uppercase; color:#444; }
+    #source { flex:1; width:100%; resize:none; font-family:monospace; font-size:13px; padding:.6rem; border:1px solid #ccc; background:#fafafa; }
+    #output { flex:1; white-space:pre-wrap; font-family:monospace; font-size:13px; padding:.6rem; border:1px solid #ccc; background:#fff; overflow:auto; }
+    #status { font-size:.8rem; margin:.4rem 0 0 0; }
   </style>
 </head>
 <body>
   <header>
     <h1>Concept Transpiler Browser Demo</h1>
-    <p>Quick test harness deployed on Vercel.</p>
+    <p>Quick test harness. Paste Concept 4GL source below and click Run to transpile & execute.</p>
   </header>
-  <div class="actions">
-    <button id="helloBtn">Hello Dialog</button>
-    <button id="startBtn">Trigger @START</button>
+  <div class="layout" style="height:70vh;">
+    <div class="panel">
+      <h2>Concept Source</h2>
+      <textarea id="source" placeholder="Paste Concept code here...">
+        $constant SCHOOL_NAME "Oslo University"
+$constant PASSING_GRADE 60
+$constant MAX_POINTS 100
+
+online="GradingSystem"
+
+field="studentId" static() storage(i4) initial-value(0)
+field="studentName" static() storage(a(100)) initial-value("")
+field="exam1" static() storage(i4) initial-value(0)
+field="exam2" static() storage(i4) initial-value(0)
+field="exam3" static() storage(i4) initial-value(0)
+field="totalPoints" static() storage(i4) initial-value(0)
+field="averageGrade" static() storage(i4) initial-value(0)
+field="passed" static() storage(a(5)) initial-value("false")
+
+on @START
+  assign("studentId" = 20241001)
+  assign("studentName" = "Maria Olsen")
+  assign("exam1" = 85)
+  assign("exam2" = 78)
+  assign("exam3" = 92)
+  call('CalculateTotal')
+  call('CalculateAverage')
+  call('CheckPassing')
+  call('helloDialog', passed)
+endon
+
+xtra="CalculateTotal"
+on @xtra
+  assign("totalPoints" = "exam1" + "exam2" + "exam3")
+endon
+
+xtra="CalculateAverage"
+on @xtra
+  assign("averageGrade" = "totalPoints" / 3)
+endon
+
+xtra="CheckPassing"
+on @xtra
+  if("averageGrade" > 50)
+    assign("passed" = "pass")
+  else
+    assign("passed" = "fail")
+    endif 
+    endon
+      </textarea>
+      <div class="actions">
+        <button id="runBtn">Run ▶</button>
+        <button id="clearBtn">Clear</button>
+      </div>
+      <p id="status" aria-live="polite"></p>
+    </div>
+    <div class="panel">
+      <h2>Runtime Output</h2>
+      <div id="output"></div>
+    </div>
   </div>
-  <section id="log"></section>
   <script type="module">
     import { ConceptWebRuntime } from './concept-web-runtime.js';
+  import { BrowserConceptTranspiler } from './web/browser-transpiler.js'; // remains in /web to keep separation
 
     const runtime = new ConceptWebRuntime();
     window.conceptRuntime = runtime; // expose for console tests
+    window.ConceptRuntime = ConceptWebRuntime; // used by cleaned generated code
+    const transpiler = new BrowserConceptTranspiler();
 
-    const logEl = document.getElementById('log');
-    const log = (msg) => { logEl.textContent += msg + '\n'; };
+  const statusEl = document.getElementById('status');
+  const outputEl = document.getElementById('output');
+  const sourceEl = document.getElementById('source');
 
-    document.getElementById('helloBtn').addEventListener('click', () => {
-      runtime.call('helloDialog', 'Hello from Concept in the Browser');
-      log('Opened hello dialog');
-    });
+    function setStatus(msg, ok = true) {
+      statusEl.textContent = msg;
+      statusEl.style.color = ok ? '#070' : '#a00';
+    }
 
-    document.getElementById('startBtn').addEventListener('click', async () => {
-      // Simulate an application with a @START handler (mock)
-      runtime.registerEventHandler('@START', async () => {
-        log('Mock @START handler executed');
-      });
-      await runtime.triggerEvent('@START');
-    });
+    function clearAll() {
+      outputEl.textContent = '';
+      setStatus('Cleared');
+    }
 
-    // Auto-show dialog on load (optional)
-    runtime.call('helloDialog');
+    function appendOutput(line) {
+      outputEl.textContent += line + '\n';
+    }
+
+    function runConcept() {
+      outputEl.textContent = '';
+      const source = sourceEl.value;
+      if (!source.trim()) { setStatus('No source to transpile', false); return; }
+      let jsCode;
+      try {
+        jsCode = transpiler.transpile(source, 'browser-input.uni');
+      } catch (err) {
+        setStatus('Parse error: ' + err.message, false);
+        appendOutput('ERROR: ' + err.message);
+        return;
+      }
+      setStatus('Transpilation succeeded');
+
+      let cleaned = jsCode
+        .replace(/import[^\n]*concept-web-runtime[^\n]*\n/, 'const ConceptRuntime = window.ConceptRuntime;\n')
+        .replace(/export default ConceptApplication;?\n?/, '');
+
+      const wrapped = `(() => {\n${cleaned}\nreturn (typeof ConceptApplication !== 'undefined' ? ConceptApplication : null);\n})()`;
+      const originalLog = console.log;
+      console.log = (...args) => {
+        const line = args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');
+        appendOutput(line);
+        originalLog.apply(console, args);
+      };
+      try {
+        const runner = new Function('return ' + wrapped + ';');
+        const ConceptApplication = runner();
+        appendOutput('Diagnostic: evaluated type = ' + typeof ConceptApplication);
+        if (!ConceptApplication || typeof ConceptApplication !== 'function') {
+          throw new Error('ConceptApplication class not found');
+        }
+        const createFn = (typeof ConceptApplication.create === 'function') ? ConceptApplication.create : (async () => new ConceptApplication());
+        Promise.resolve(createFn()).then(app => {
+          appendOutput('Application run completed. Fields:');
+          appendOutput(JSON.stringify(app.fields, null, 2));
+          setStatus('Execution finished');
+          console.log = originalLog;
+        }).catch(err => {
+          appendOutput('Runtime ERROR: ' + err.message);
+          setStatus('Runtime error', false);
+          console.log = originalLog;
+        });
+      } catch (e) {
+        appendOutput('Eval ERROR: ' + e.message);
+        setStatus('Evaluation failed', false);
+        console.log = originalLog;
+      }
+    }
+
+    document.getElementById('runBtn').addEventListener('click', runConcept);
+    document.getElementById('clearBtn').addEventListener('click', clearAll);
+    // Preload a tiny example
+    // sourceEl.value = '$constant PI 3.14159\nonline="MiniDemo"\n\non @START\n  assign("piCopy" = "PI")\nendon';
+    setStatus('Ready');
   </script>
 </body>
 </html>

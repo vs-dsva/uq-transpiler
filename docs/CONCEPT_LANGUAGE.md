@@ -1,6 +1,6 @@
-# Concept 4GL Language Reference
+# Concept 4GL Language Reference (Experimental Snapshot)
 
-This document describes the Concept 4GL language syntax and constructs currently supported by the transpiler. It also integrates selected information from the original reference manual (components, directives, naming rules, operator precedence) to guide future expansion. Unsupported constructs are noted.
+This is a living, incomplete summary of the subset currently parsed/emitted by the experimental transpiler. It is NOT authoritative and will drift; unsupported constructs may appear in examples for roadmap context.
 
 ## Table of Contents
 

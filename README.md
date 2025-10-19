@@ -1,60 +1,49 @@
-# Concept 4GL to JavaScript Transpiler# Concept 4GL to JavaScript Transpiler
+# Concept 4GL → JavaScript Transpiler (Experimental)
+
+This is an exploratory / toy transpiler that converts a subset of Concept 4GL (`.uni`) source to ES6 JavaScript. It is NOT production‑ready; internal constructs, error handling, and runtime behaviors may change at any time.
+
+Goals (informal):
+- Prototype automated migration paths from legacy Concept code.
+- Experiment with PEG grammar (Peggy) for a 4GL style language.
+- Provide a small runnable JS output to inspect fields, constants and event flow.
+
+Non‑Goals (for now):
+- Perfect semantic fidelity.
+- Performance optimization.
+- Comprehensive runtime (DB, UI, etc.).
+
+Use this project for learning / experimentation only.
+
+## Current Feature Set (Partial)
+- Peggy grammar for: constants, includes, online app declaration, fields, events, if / elseif / else, loops (loop / while), case statements, assignments, function calls, simple expressions (arithmetic, comparison, logical), range (`a : b`), membership (`x in (...)`), concatenation (`&&`, `&`), unary `+`/`-`, power `**`, substring infix `expr # start # end`.
+- Xtra subroutines exposed as async methods.
+- Basic runtime class with event registration and field storage.
+- CLI with commands: transpile, transpile-dir, run, analyze, demo, init, test.
+- Browser demo page (textarea + run button) using Vite.
+
+Things missing or unstable:
+- Advanced database operations semantics.
+- UI/layout semantics beyond basic demo dialogs.
+- Robust error recovery / messages (parser stops on first error).
+- Comprehensive intrinsic functions beyond implemented subset.
+
+Expect breaking changes.
 
 
 
-A production-ready transpiler that converts Concept 4GL language files (.uni) to modern ES6 JavaScript.A production-ready transpiler that converts Concept 4GL language files (.uni) to modern ES6 JavaScript.
+## Installation
 
 
 
-## What is this?## What is this?
+```bash
+npm install
+```
 
 
 
-This transpiler converts legacy Concept 4GL applications to JavaScript, enabling:This transpiler converts legacy Concept 4GL applications to JavaScript, enabling:
+## Build / Run
 
-- Modernization of legacy codebases- Modernization of legacy codebases
-
-- Integration with modern JavaScript tooling- Integration with modern JavaScript tooling
-
-- Easier maintenance and extension of Concept applications- Easier maintenance and extension of Concept applications
-
-- Deployment to modern runtime environments- Deployment to modern runtime environments
-
-
-
-## Features## Features
-
-
-
-- **Peggy PEG Parser** - Robust grammar-based parsing- **Peggy PEG Parser** - Robust grammar-based parsing
-
-- **Complete Language Support** - Fields, events, control flow, functions, database operations- **Complete Language Support** - Fields, events, control flow, functions, database operations
-
-- **ES6 Output** - Clean, readable JavaScript with classes and async/await- **ES6 Output** - Clean, readable JavaScript with classes and async/await
-
-- **Runtime Library** - Full implementation of Concept language features- **Runtime Library** - Full implementation of Concept language features
-
-- **100% Test Coverage** - All 13 example files pass- **100% Test Coverage** - All 13 example files pass
-
-
-
-## Installation## Installation
-
-
-
-```bash```bash
-
-npm installnpm install
-
-``````
-
-
-
-## Build## Build
-
-
-
-No build step required - the transpiler runs directly with Node.js.No build step required - the transpiler runs directly with Node.js.
+No special build step for CLI usage. Browser demo uses Vite.
 
 
 
@@ -62,19 +51,17 @@ To verify everything works:To verify everything works:
 
 
 
-```bash```bash
-
-npm testnpm test
-
-``````
+```bash
+npm test
+```
 
 
 
-Expected output: `13/13 tests passing`Expected output: `13/13 tests passing`
+Tests are illustrative, not exhaustive; passing them does not imply completeness.
 
 
 
-## Usage## Usage
+## Usage
 
 
 
@@ -82,11 +69,9 @@ Expected output: `13/13 tests passing`Expected output: `13/13 tests passing`
 
 
 
-```bash```bash
-
-node cli.js transpile examples/calculator.uni -o output.jsnode cli.js transpile examples/calculator.uni -o output.js
-
-``````
+```bash
+node cli.js transpile examples/calculator.uni -o output.js
+```
 
 
 
@@ -94,11 +79,9 @@ node cli.js transpile examples/calculator.uni -o output.jsnode cli.js transpile 
 
 
 
-```bash```bash
-
-node cli.js transpile-dir examples -o transpilednode cli.js transpile-dir examples -o transpiled
-
-``````
+```bash
+node cli.js transpile-dir examples -o transpiled
+```
 
 
 
@@ -106,19 +89,13 @@ node cli.js transpile-dir examples -o transpilednode cli.js transpile-dir exampl
 
 
 
-```bash```bash
+```bash
+# First transpile
+node cli.js transpile examples/calculator.uni -o calculator.js
 
-# First transpile# First transpile
-
-node cli.js transpile examples/calculator.uni -o calculator.jsnode cli.js transpile examples/calculator.uni -o calculator.js
-
-
-
-# Then run with Node.js# Then run with Node.js
-
-node calculator.jsnode calculator.js
-
-``````
+# Then run
+node calculator.js
+```
 
 
 
@@ -126,11 +103,9 @@ Or use the test runner:Or use the test runner:
 
 
 
-```bash```bash
-
-node run-transpiled.js calculatornode run-transpiled.js calculator
-
-``````
+```bash
+node run-transpiled.js calculator
+```
 
 
 
@@ -142,177 +117,95 @@ View the Abstract Syntax Tree for a file:View the Abstract Syntax Tree for a fil
 
 
 
-```bash```bash
-
-node cli.js analyze examples/calculator.uni --astnode cli.js analyze examples/calculator.uni --ast
-
-``````
+```bash
+node cli.js analyze examples/calculator.uni --ast
+```
 
 
 
-## Project Structure## Project Structure
+## Project Structure (abbreviated)
 
 
 
-``````
-
-transpiler/transpiler/
-
-├── concept.peggy          # Peggy grammar (459 lines)├── concept.peggy          # Peggy grammar (459 lines)
-
-├── peggy-transpiler.js    # Parser integration├── peggy-transpiler.js    # Parser integration
-
-├── generator.js           # JavaScript code generator (708 lines)├── generator.js           # JavaScript code generator (708 lines)
-
-├── concept-runtime.js     # Runtime library├── concept-runtime.js     # Runtime library
-
-├── index.js               # Main transpiler class├── index.js               # Main transpiler class
-
-├── cli.js                 # Command-line interface (404 lines)├── cli.js                 # Command-line interface (404 lines)
-
-├── test-peggy.js          # Test suite (108 lines)├── test-peggy.js          # Test suite (108 lines)
-
-├── run-transpiled.js      # Execution test utility├── run-transpiled.js      # Execution test utility
-
-├── examples/              # 13 example .uni files├── examples/              # 13 example .uni files
-
-└── docs/                  # Documentation└── docs/                  # Documentation
-
-    └── CONCEPT_LANGUAGE.md    └── CONCEPT_LANGUAGE.md
-
-``````
+```
+concept.peggy          # Peggy grammar
+generator.js           # JS code emitter
+concept-runtime.js     # Minimal runtime
+concept-node-runtime.js# Node runtime wrapper
+concept-web-runtime.js # Browser runtime variant
+cli.js                 # CLI commands
+index.js               # Transpiler API
+examples/              # Example .uni inputs
+docs/                  # Reference & notes
+vite.config.js         # Browser demo build
+index.html             # Browser demo page
+```
 
 
 
-## Example## Example
+## Example
 
 
 
 **Input (calculator.uni):****Input (calculator.uni):**
 
-```concept```concept
+```concept
+online="Calculator"
 
-online="Calculator"online="Calculator"
+field="num1" static() storage(i4) initial-value(0)
+field="num2" static() storage(i4) initial-value(0)
+field="result" static() storage(i4) initial-value(0)
 
+on @START
+  assign("num1" = 100)
+  assign("num2" = 25)
+  call('Add')
+endon
 
-
-field="num1" static() storage(i4) initial-value(0)field="num1" static() storage(i4) initial-value(0)
-
-field="num2" static() storage(i4) initial-value(0)field="num2" static() storage(i4) initial-value(0)
-
-field="result" static() storage(i4) initial-value(0)field="result" static() storage(i4) initial-value(0)
-
-
-
-on @STARTon @START
-
-  assign("num1" = 100)  assign("num1" = 100)
-
-  assign("num2" = 25)  assign("num2" = 25)
-
-  call('Add')  call('Add')
-
-endonendon
-
-
-
-xtra="Add"xtra="Add"
-
-on @xtraon @xtra
-
-  assign("result" = "num1" + "num2")  assign("result" = "num1" + "num2")
-
-endonendon
-
-``````
+xtra="Add"
+on @xtra
+  assign("result" = "num1" + "num2")
+endon
+```
 
 
 
 **Output (JavaScript):****Output (JavaScript):**
 
-```javascript```javascript
-
-import { ConceptRuntime } from "./concept-runtime.js";import { ConceptRuntime } from "./concept-runtime.js";
-
-
-
-class ConceptApplication {class ConceptApplication {
-
-  constructor() {  constructor() {
-
-    this.runtime = new ConceptRuntime();    this.runtime = new ConceptRuntime();
-
-    this.fields = {};    this.fields = {};
-
-  }  }
-
-
-
-  initializeFields() {  initializeFields() {
-
-    this.fields["num1"] = 0;    this.fields["num1"] = 0;
-
-    this.fields["num2"] = 0;    this.fields["num2"] = 0;
-
-    this.fields["result"] = 0;    this.fields["result"] = 0;
-
-  }  }
-
-
-
-  async handle__START(event) {  async handle__START(event) {
-
-    this.fields["num1"] = 100;    this.fields["num1"] = 100;
-
-    this.fields["num2"] = 25;    this.fields["num2"] = 25;
-
-    await this.runtime.call("Add");    await this.runtime.call("Add");
-
-  }  }
+```javascript
+import { ConceptRuntime } from "./concept-runtime.js";
+class ConceptApplication {
+  constructor() {
+    this.runtime = new ConceptRuntime();
+    this.fields = {};
+  }
+  initializeFields() {
+    this.fields["num1"] = 0;
+    this.fields["num2"] = 0;
+    this.fields["result"] = 0;
+  }
+  async handle__START(event) {
+    this.fields["num1"] = 100;
+    this.fields["num2"] = 25;
+    await this.runtime.call("Add");
+  }
+  async Add(params = {}) {
+    this.fields["result"] = (this.fields["num1"] + this.fields["num2"]);
+  }
+  async run() {
+    this.initializeFields();
+    this.runtime.registerEventHandler("@START", this.handle__START.bind(this));
+    await this.runtime.triggerEvent("@START");
+    return this;
+  }
+  static async create() { const app = new ConceptApplication(); return await app.run(); }
+}
+export default ConceptApplication;
+```
 
 
 
-  async Add(params = {}) {  async Add(params = {}) {
-
-    this.fields["result"] = (this.fields["num1"] + this.fields["num2"]);    this.fields["result"] = (this.fields["num1"] + this.fields["num2"]);
-
-  }  }
-
-
-
-  async run() {  async run() {
-
-    this.initializeFields();    this.initializeFields();
-
-    this.runtime.registerEventHandler("@START", this.handle__START.bind(this));    this.runtime.registerEventHandler("@START", this.handle__START.bind(this));
-
-    await this.runtime.triggerEvent("@START");    await this.runtime.triggerEvent("@START");
-
-    return this;    return this;
-
-  }  }
-
-
-
-  static async create() {  static async create() {
-
-    const app = new ConceptApplication();    const app = new ConceptApplication();
-
-    return await app.run();    return await app.run();
-
-  }  }
-
-}}
-
-
-
-export default ConceptApplication;export default ConceptApplication;
-
-``````
-
-
-
-## CLI Commands## CLI Commands
+## CLI Commands
 
 
 
@@ -328,35 +221,35 @@ export default ConceptApplication;export default ConceptApplication;
 
 | `test` | Run all test files || `test` | Run all test files |
 
-| `demo` | Interactive demo mode || `demo` | Interactive demo mode |
+| `demo` | Simple demo (experimental) |
 
 | `init <dir>` | Initialize a new Concept project || `init <dir>` | Initialize a new Concept project |
 
 
 
-## Requirements## Requirements
+## Requirements
 
 
 
-- Node.js v14+ (tested with v22.19.0)- Node.js v14+ (tested with v22.19.0)
+Node.js v14+ (tested quickly with a recent v22 build). Earlier versions may work; not guaranteed.
 
 - ES6 module support- ES6 module support
 
 
 
-## Documentation## Documentation
+## Documentation
 
 
 
-- [Concept Language Reference](docs/CONCEPT_LANGUAGE.md) - Complete language guide- [Concept Language Reference](docs/CONCEPT_LANGUAGE.md) - Complete language guide
+See `docs/CONCEPT_LANGUAGE.md` for the evolving language reference (not authoritative).
 
 
 
-## License## License
+## License
 
 
 
-ISCISC
+ISC
 
 
 #### Transpile a Single File
